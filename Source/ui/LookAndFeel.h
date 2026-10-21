@@ -16,17 +16,51 @@ public:
   if(lit){g.setColour(Theme::neon.withAlpha(.18f));g.fillRoundedRectangle(r.reduced(2),4);}
  }
  void drawButtonText(juce::Graphics&g,juce::TextButton&b,bool,bool) override {
-  g.setColour(b.getToggleState()?Theme::value:Theme::label);g.setFont(Theme::font(juce::jmin(19.f,b.getHeight()*.42f),true));
-  g.drawFittedText(b.getButtonText(),b.getLocalBounds(),juce::Justification::centred,1);
+  auto text=b.getButtonText();
+  auto bounds=b.getLocalBounds().reduced(3);
+  g.setColour(b.getToggleState()?Theme::value:Theme::label);
+  // All glyphs are drawn as JUCE vectors: no missing-font Unicode symbols.
+  if(text=="PREV" || text=="NEXT" || text=="FILTER"){
+   const float cx=b.getWidth()*.5f,cy=b.getHeight()*.5f;
+   juce::Path arrow;const bool left=text=="PREV";
+   if(left){arrow.startNewSubPath(cx+7,cy-10);arrow.lineTo(cx-7,cy);arrow.lineTo(cx+7,cy+10);}
+   else {arrow.startNewSubPath(cx-7,cy-10);arrow.lineTo(cx+7,cy);arrow.lineTo(cx-7,cy+10);}
+   if(text=="FILTER"){arrow.clear();arrow.addTriangle(cx-11,cy-5,cx+11,cy-5,cx,cy+8);g.fillPath(arrow);}
+   else g.strokePath(arrow,juce::PathStrokeType(3.f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+   return;
+  }
+  if(text=="MENU"){
+   const float x=b.getWidth()*.28f,w=b.getWidth()*.44f;
+   for(int i=-1;i<=1;++i)g.drawLine(x,b.getHeight()*.5f+i*7,x+w,b.getHeight()*.5f+i*7,2.4f);
+   return;
+  }
+  if(text=="SAVE"){
+   auto r=b.getLocalBounds().toFloat().withSizeKeepingCentre(24.f,25.f);
+   g.drawRoundedRectangle(r,1.5f,2.f);g.fillRect(r.getX()+5,r.getY()+3,13.f,7.f);
+   g.drawRect(r.getX()+5,r.getY()+14,14.f,9.f,1.6f);return;
+  }
+  if(text=="HPF"){
+   juce::Path path; const float x=b.getWidth()*.28f,y=b.getHeight()*.69f;
+   path.startNewSubPath(x,y);path.lineTo(x+11,y);path.lineTo(x+29,y-19);path.lineTo(x+47,y-19);
+   g.strokePath(path,juce::PathStrokeType(2.5f));return;
+  }
+  const bool preset=text.contains("Default Preset")||text.startsWith("A: ")||text.startsWith("B: ");
+  g.setFont(Theme::font(juce::jmin(preset?17.f:18.f,b.getHeight()*.42f),true));
+  g.drawFittedText(text,bounds,juce::Justification::centred,1,.57f);
  }
  void drawLinearSlider(juce::Graphics&g,int x,int y,int w,int h,float, float,float,juce::Slider::SliderStyle,juce::Slider& slider) override {
-  const auto top=12.f,bottom=(float)h-12.f;
+  // Do not paint a black backing plate over the housing and live meter.
+  const float top=juce::jmax(22.f,h*.048f),bottom=(float)h-top;
   const float pos=bottom-(float)slider.valueToProportionOfLength(slider.getValue())*(bottom-top);
-  g.setColour(Theme::black);g.fillRoundedRectangle((float)x+w*.33f,(float)y+top,w*.34f,bottom-top,4);
-  auto r=juce::Rectangle<float>((float)x+w*.12f,(float)y+pos-25.f,w*.76f,50.f);
-  Theme::panel(g,r,true);Theme::glow(g,r);
-  if(capImage.isValid())g.drawImage(capImage,r.expanded(7).getX(),r.expanded(7).getY(),r.expanded(7).getWidth(),r.expanded(7).getHeight(),0,0,capImage.getWidth(),capImage.getHeight());
-  else {g.setColour(Theme::bright);g.setFont(Theme::font(24,true));g.drawFittedText("☠",r.toNearestInt(),juce::Justification::centred,1);}
+  const float capW=juce::jmin(w*.95f,h*.23f), capH=capW*.81f;
+  const float cx=(float)x+w*.5f,cy=(float)y+pos;
+  if(capImage.isValid()){
+   const float px=cx-capW*.5f,py=cy-capH*.5f;
+   g.drawImage(capImage,px,py,capW,capH,0,0,capImage.getWidth(),capImage.getHeight());
+  }else{
+   auto r=juce::Rectangle<float>(cx-capW*.5f,cy-capH*.5f,capW,capH);
+   Theme::panel(g,r,true);Theme::glow(g,r);
+  }
  }
  void drawRotarySlider(juce::Graphics&g,int x,int y,int w,int h,float prop,float start,float end,juce::Slider&) override {
   const auto cx=x+w*.5f,cy=y+h*.5f,r=juce::jmin(w,h)*.38f;

@@ -5,7 +5,7 @@ class SectionHeader:public juce::Component {
 public:
  explicit SectionHeader(juce::String text):title(std::move(text)){setBufferedToImage(true);}
  void paint(juce::Graphics&g) override{g.setColour(Theme::label);g.setFont(Theme::font(20,true));
-  g.drawText(title,getLocalBounds().withTrimmedBottom(10),juce::Justification::centred);
+  g.drawFittedText(title,getLocalBounds().withTrimmedBottom(juce::jmax(3,getHeight()/5)),juce::Justification::centred,1,0.7f);
   const float y=getHeight()-3.f;Theme::line(g,0,y,getWidth(),y,.6f);
   g.setColour(Theme::neon);juce::Path star;star.addStar({getWidth()*.5f,y},4,3,11);g.fillPath(star);
  }
@@ -16,7 +16,7 @@ class IconButton:public juce::TextButton {public:explicit IconButton(const juce:
 class ReadoutBox:public juce::Label {public:ReadoutBox(){setJustificationType(juce::Justification::centred);
  setColour(textColourId,Theme::value);setColour(backgroundColourId,Theme::black);
  setColour(outlineColourId,Theme::mid);setColour(textWhenEditingColourId,Theme::value);
- setFont(Theme::font(24,true));setEditable(false,true,false);}};
+ setFont(Theme::font(20,true));setMinimumHorizontalScale(0.6f);setEditable(false,true,false);}};
 class SkullKnob: public juce::Slider {public:SkullKnob(){setSliderStyle(RotaryHorizontalVerticalDrag);setTextBoxStyle(NoTextBox,false,0,0);
  setMouseCursor(juce::MouseCursor::PointingHandCursor);setDoubleClickReturnValue(true,5860);}};
 class ThresholdFader:public juce::Slider {public:ThresholdFader(){setSliderStyle(LinearVertical);setTextBoxStyle(NoTextBox,false,0,0);
@@ -42,7 +42,7 @@ private:
 };
 class PresetBar:public juce::Component {
 public:
- juce::TextButton previous{"◀"},next{"▶"},save{"▣"},menu{"☰"},name{"A: My Default Preset"};
+ juce::TextButton previous{"PREV"},next{"NEXT"},save{"SAVE"},menu{"MENU"},name{"A: My Default Preset"};
  PresetBar(){for(auto*b:{&previous,&next,&save,&menu,&name})addAndMakeVisible(*b);}
  void resized()override {auto w=getWidth();previous.setBounds(0,0,48,50);name.setBounds(54,0,w-162,50);
   next.setBounds(w-104,0,48,50);save.setBounds(w-51,0,48,50);}

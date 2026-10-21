@@ -21,8 +21,8 @@ private:
  ThresholdFader threshold;
  ReadoutBox frequencyValue,thresholdValue;
  TwoStateButton split{"Split"},wide{"Wide"},audio{"Audio"},sidechain{"S Chain"};
- IconButton hpf{"⌁"},filter{"▼"};
- IconButton prev{"◀"},next{"▶"},save{"▣"},settings{"☰"},preset{"A: My Default Preset"};
+ IconButton hpf{"HPF"},filter{"FILTER"};
+ IconButton prev{"PREV"},next{"NEXT"},save{"SAVE"},settings{"MENU"},preset{"A: My Default Preset"};
  SectionHeader detectHeader{"DETECTION"},frequencyHeader{"FREQUENCY"},sideHeader{"SIDECHAIN"},monitorHeader{"MONITOR"};
  WaveformBackdrop waveform;
  juce::Image artFrame,artSkull,stageArt,leftArt,faderArt,capArt,knobArt;

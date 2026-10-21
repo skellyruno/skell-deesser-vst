@@ -92,6 +92,7 @@ void SkellyDeEsserAudioProcessorEditor::paint(juce::Graphics&g){
  draw(g,stageArt,352,213,1137,650);draw(g,leftArt,51,198,254,659);
  g.setColour(Theme::dim.withAlpha(.65f));g.drawRect(350,216,1138,643,1);
  for(int y=312;y<845;y+=93)Theme::line(g,353,(float)y,1486,(float)y,.09f);
+ // Keep artwork prominent while preserving contrast with functional overlays.
  draw(g,artFrame,0,0,1536,1024);
  draw(g,artSkull,624,0,288,242);
  g.setColour(Theme::neon);g.setFont(Theme::font(64,true));g.drawText("SKELLY",80,67,300,77,juce::Justification::centredLeft);
@@ -114,15 +115,18 @@ void SkellyDeEsserAudioProcessorEditor::paint(juce::Graphics&g){
 void SkellyDeEsserAudioProcessorEditor::resized(){
  const auto sx=getWidth()/1536.f,sy=getHeight()/1024.f;
  auto place=[sx,sy](juce::Component&c,int x,int y,int w,int h){c.setBounds(juce::roundToInt(x*sx),juce::roundToInt(y*sy),juce::roundToInt(w*sx),juce::roundToInt(h*sy));};
- place(detectHeader,82,214,195,41);place(split,91,266,178,43);place(wide,91,313,178,43);
- place(frequencyHeader,82,368,195,42);place(frequency,104,424,150,130);
- place(frequencyValue,113,559,132,36);place(sideHeader,82,613,195,39);
+ place(detectHeader,76,214,209,41);place(split,91,266,178,43);place(wide,91,313,178,43);
+ place(frequencyHeader,76,368,209,42);place(frequency,104,424,150,130);
+ place(frequencyValue,100,558,158,39);place(sideHeader,76,613,209,39);
  place(hpf,89,667,89,50);place(filter,182,667,90,50);
- place(monitorHeader,82,734,195,39);place(audio,76,791,101,54);place(sidechain,183,791,100,54);
+ place(monitorHeader,76,734,209,39);place(audio,76,791,101,54);place(sidechain,183,791,100,54);
  place(waveform,397,316,1064,418);waveform.toBack();
- place(threshold,710,304,116,464);place(thresholdValue,701,783,142,49);
+ place(threshold,710,304,116,464);place(thresholdValue,684,783,168,49);
  place(prev,1041,128,47,54);place(preset,1094,128,273,54);
- place(next,1343,130,25,50);place(save,1380,128,53,54);place(settings,1444,128,54,54);
+ place(next,1336,130,34,50);place(save,1380,128,53,54);place(settings,1444,128,54,54);
+ const auto textPx=juce::jmax(12.f,20.f*sy);
+ frequencyValue.setFont(Theme::font(textPx,true));
+ thresholdValue.setFont(Theme::font(juce::jmax(14.f,25.f*sy),true));
  processor.apvts.state.setProperty("editorWidth",getWidth(),nullptr);
  processor.apvts.state.setProperty("editorHeight",getHeight(),nullptr);
 }

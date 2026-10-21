@@ -82,3 +82,7 @@ Assets are PNGs generated from user-provided design regions and procedural textu
 * `engine_smoke`: full engine's 4096-sample dual-channel processing has measured **zero sample error when range=0** (default output gain), and engages up to 24 dB of reduction for a 5.86-kHz sine in the test.
 
 **Limitations:** The JUCE plugin has not been built or tested in a DAW in this environment. There are no FL Studio crash/restore or audio perceptual tests yet. Split-band selection is a zero-latency parallel-filter subtraction rather than a dedicated linear-phase crossover; high-Q resonances, transitions, aliases and real vocal transparency need separate validation. The workflow still downloads JUCE during configuration unless `JUCE_PATH` points to a checkout.
+
+## Windows compile fix (V3.1)
+
+The CMake configuration now explicitly calls `juce_generate_juce_header(SkellyDeEsser)` immediately after `juce_add_plugin`. This generates the `JuceHeader.h` expected by the existing source files and exports its generated include path to the plugin target. Without it, MSVC reports C1083 while compiling `PluginProcessor.cpp` and `PluginEditor.cpp`. GitHub Actions workflow is unchanged. Standalone DSP smoke tests passed locally; a full Windows/JUCE build must still be confirmed in GitHub Actions.
