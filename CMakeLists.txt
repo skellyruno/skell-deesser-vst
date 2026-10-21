@@ -7,11 +7,12 @@ else()
   FetchContent_Declare(JUCE GIT_REPOSITORY https://github.com/juce-framework/JUCE.git GIT_TAG 8.0.12 GIT_SHALLOW TRUE)
   FetchContent_MakeAvailable(JUCE)
 endif()
-juce_generate_juce_header(SkellyDeEsser)
+
 juce_add_plugin(SkellyDeEsser COMPANY_NAME "Skelly Audio" BUNDLE_ID "audio.skelly.deesser"
  PLUGIN_MANUFACTURER_CODE SkAu PLUGIN_CODE SkDs FORMATS VST3 Standalone
  PRODUCT_NAME "Skelly DeEsser" IS_SYNTH FALSE NEEDS_MIDI_INPUT FALSE NEEDS_MIDI_OUTPUT FALSE
  IS_MIDI_EFFECT FALSE COPY_PLUGIN_AFTER_BUILD FALSE)
+juce_generate_juce_header(SkellyDeEsser)
 juce_add_binary_data(SkellyArt SOURCES
  Assets/frame.png Assets/skull_emblem.png Assets/stage_bg.png Assets/left_panel_bg.png
  Assets/knob_skull.png Assets/fader_cap.png Assets/fader_housing.png)
