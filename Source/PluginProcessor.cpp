@@ -89,7 +89,7 @@ void SkellyDeEsserAudioProcessor::setStateInformation(const void* data,int size)
    if(!slotB.isValid())slotB=apvts.copyState();
   }else if(tree.isValid()&&tree.hasType(apvts.state.getType())){
    apvts.replaceState(tree);slotA=apvts.copyState();slotB=slotA.createCopy();
-   activeSlot=juce::String(apvts.state.getProperty("slot","A"))=="B"?1:0;
+   activeSlot=apvts.state.getProperty("slot","A").toString()=="B"?1:0;
   }
  }
 }

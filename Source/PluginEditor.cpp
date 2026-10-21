@@ -34,10 +34,12 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  hpf.onClick=[this]{auto*v=processor.apvts.getRawParameterValue("sidechainHpf");setFloat("sidechainHpf",v->load()>.5f?0.f:1.f);};
  filter.onClick=[this]{juce::PopupMenu m;juce::StringArray names{"Off","HPF 6 dB","HPF 12 dB","Band-Pass","Listen Filter"};
   for(int i=0;i<names.size();++i)m.addItem(i+1,names[i],true,i==(int)processor.apvts.getRawParameterValue("sidechainFilterType")->load());
-  m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&filter),[safe=juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this)](int r){if(safe&&r>0)safe->setChoice("sidechainFilterType",r-1);});};
+  auto safe = juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
+   m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&filter),[safe](int r){if(safe&&r>0)safe->setChoice("sidechainFilterType",r-1);});};
  settings.onClick=[this]{showSettings();};
  preset.onClick=[this]{juce::PopupMenu m;m.addItem(1,"My Default Preset");m.addItem(2,"Init");
-  m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&preset),[safe=juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this)](int r){if(safe&&r==2)safe->processor.restoreDefaults();});};
+  auto safe = juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
+   m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&preset),[safe](int r){if(safe&&r==2)safe->processor.restoreDefaults();});};
  prev.onClick=next.onClick=[this]{processor.switchSlot(1-processor.getSlot());updateButtons();};
  save.onClick=[this]{juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,"Skelly DeEsser","Preset and A/B state are saved with your host project.");};
  aspect.setFixedAspectRatio(1.5);setConstrainer(&aspect);setResizable(true,true);
@@ -59,8 +61,8 @@ void SkellyDeEsserAudioProcessorEditor::updateButtons(){
  audio.setToggleState(get("monitorMode")<.5f,juce::dontSendNotification);
  sidechain.setToggleState(get("monitorMode")>.5f,juce::dontSendNotification);
  hpf.setToggleState(get("sidechainHpf")>.5f,juce::dontSendNotification);
- preset.setButtonText(juce::String(processor.apvts.state.getProperty("slot","A"))+": "+
-                      juce::String(processor.apvts.state.getProperty("presetName","My Default Preset")));
+ preset.setButtonText(processor.apvts.state.getProperty("slot","A").toString()+": "+
+                      processor.apvts.state.getProperty("presetName","My Default Preset").toString());
 }
 void SkellyDeEsserAudioProcessorEditor::showSettings(){
  juce::PopupMenu m;m.addItem(1,"Init");m.addItem(2,"Copy A to B");m.addSeparator();
@@ -69,7 +71,8 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
  m.addItem(5,"Attack +1 ms");m.addItem(6,"Release +10 ms");
  m.addItem(7,"Stereo link 100%");m.addItem(8,"Output gain 0 dB");
  m.addSeparator();m.addItem(9,"About Skelly DeEsser 1.0");
- m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&settings),[safe=juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this)](int r){
+ auto safe = juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
+  m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&settings),[safe](int r){
   if(!safe)return;
   auto&self=*safe;
   auto add=[&](const char*k,float step){self.setFloat(k,self.processor.apvts.getRawParameterValue(k)->load()+step);};

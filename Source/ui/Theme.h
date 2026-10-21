@@ -9,9 +9,9 @@ const juce::Colour mid = juce::Colour::fromRGB(31,181,42);
 const juce::Colour dim = juce::Colour::fromRGB(15,74,20);
 const juce::Colour label = juce::Colour::fromRGB(157,255,157);
 const juce::Colour value = juce::Colour::fromRGB(216,255,216);
-constexpr juce::Rectangle<int> left{50,200,255,660};
-constexpr juce::Rectangle<int> stage{350,215,1140,645};
-constexpr juce::Rectangle<int> fader{703,297,132,474};
+inline const juce::Rectangle<int> left{50,200,255,660};
+inline const juce::Rectangle<int> stage{350,215,1140,645};
+inline const juce::Rectangle<int> fader{703,297,132,474};
 inline juce::Font font(float sz, bool bold=false) {return juce::Font(juce::FontOptions(juce::Font::getDefaultSansSerifFontName(),sz,bold ? juce::Font::bold : juce::Font::plain));}
 inline void line(juce::Graphics& g, float x1,float y1,float x2,float y2,float a=.6f) {
  g.setColour(neon.withAlpha(a)); g.drawLine(x1,y1,x2,y2,1.0f);
