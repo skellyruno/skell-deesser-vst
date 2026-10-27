@@ -13,12 +13,22 @@ public:
   auto r=b.getLocalBounds().toFloat().reduced(2);
   const bool lit=b.getToggleState()||down;
   Theme::panel(g,r,lit);if(lit||hover)Theme::glow(g,r);
-  if(lit){g.setColour(Theme::neon.withAlpha(.18f));g.fillRoundedRectangle(r.reduced(2),4);}
+  // Strong, clearly visible selected state on the black/green metal panels.
+  if(lit){
+   juce::ColourGradient selected(Theme::mid.withAlpha(.85f),r.getCentreX(),r.getY(),
+                                  Theme::dim.withAlpha(.96f),r.getCentreX(),r.getBottom(),false);
+   g.setGradientFill(selected);
+   g.fillRoundedRectangle(r.reduced(2),4);
+   g.setColour(Theme::bright);
+   g.drawRoundedRectangle(r.reduced(2),4,1.3f);
+  }else if(hover){
+   g.setColour(Theme::neon.withAlpha(.10f));g.fillRoundedRectangle(r.reduced(2),4);
+  }
  }
  void drawButtonText(juce::Graphics&g,juce::TextButton&b,bool,bool) override {
   auto text=b.getButtonText();
   auto bounds=b.getLocalBounds().reduced(3);
-  g.setColour(b.getToggleState()?Theme::value:Theme::label);
+  g.setColour(b.getToggleState()?juce::Colours::white:Theme::label);
   // All glyphs are drawn as JUCE vectors: no missing-font Unicode symbols.
   if(text=="PREV" || text=="NEXT" || text=="FILTER"){
    const float cx=b.getWidth()*.5f,cy=b.getHeight()*.5f;
@@ -73,7 +83,15 @@ public:
   g.setColour(juce::Colour::fromRGB(12,22,14));g.fillEllipse(cx-r*.9f,cy-r*.9f,r*1.8f,r*1.8f);
   g.setColour(Theme::bright);g.drawEllipse(cx-r*.9f,cy-r*.9f,r*1.8f,r*1.8f,1.2f);
   if(knobImage.isValid())g.drawImage(knobImage,cx-r*.9f,cy-r*.9f,r*1.8f,r*1.8f,0,0,knobImage.getWidth(),knobImage.getHeight());
-  else {g.setFont(Theme::font(r*.87f,true));g.drawText("☠",juce::Rectangle<float>(cx-r*.7f,cy-r*.76f,r*1.4f,r*1.5f),juce::Justification::centred);}
+  else {
+   // Draw a simple vector skull if artwork is missing (no unsupported font glyphs).
+   g.setColour(Theme::value);g.fillEllipse(cx-r*.54f,cy-r*.6f,r*1.08f,r*.94f);
+   g.fillRoundedRectangle(cx-r*.31f,cy+r*.05f,r*.62f,r*.38f,2.f);
+   g.setColour(Theme::black);
+   g.fillEllipse(cx-r*.39f,cy-r*.31f,r*.27f,r*.30f);
+   g.fillEllipse(cx+r*.12f,cy-r*.31f,r*.27f,r*.30f);
+   g.fillRect(cx-r*.08f,cy+r*.10f,r*.16f,r*.18f);
+  }
  }
 private:
  juce::Image knobImage,capImage;

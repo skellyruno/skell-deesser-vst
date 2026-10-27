@@ -15,6 +15,26 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  faderArt=load(BinaryData::fader_housing_png,BinaryData::fader_housing_pngSize);
  capArt=load(BinaryData::fader_cap_png,BinaryData::fader_cap_pngSize);
  knobArt=load(BinaryData::knob_skull_png,BinaryData::knob_skull_pngSize);
+ // Assemble the high-resolution static artwork just once. The 30-Hz animation
+ // only needs to draw the cached image and the live controls/meters.
+ staticBackdrop = juce::Image(juce::Image::ARGB, Theme::width, Theme::height, true);
+ {
+  juce::Graphics art(staticBackdrop);
+  art.fillAll(Theme::black);
+  {
+   juce::Graphics::ScopedSaveState save(art);
+   art.setOpacity(0.88f);
+   draw(art,stageArt,352,213,1137,650);
+  }
+  {
+   juce::Graphics::ScopedSaveState save(art);
+   art.setOpacity(0.94f);
+   draw(art,leftArt,51,198,254,659);
+  }
+  // The generated frame uses transparent cutouts; it must go above both panels.
+  draw(art,artFrame,0,0,1536,1024);
+  draw(art,artSkull,635,0,266,241);
+ }
  look.setArt(knobArt,capArt);
  setLookAndFeel(&look);
  for(auto* c:{(juce::Component*)&frequency,(juce::Component*)&threshold,(juce::Component*)&frequencyValue,(juce::Component*)&thresholdValue,
@@ -37,11 +57,22 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
   auto safe = juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
    m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&filter),[safe](int r){if(safe&&r>0)safe->setChoice("sidechainFilterType",r-1);});};
  settings.onClick=[this]{showSettings();};
- preset.onClick=[this]{juce::PopupMenu m;m.addItem(1,"My Default Preset");m.addItem(2,"Init");
-  auto safe = juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
-   m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&preset),[safe](int r){if(safe&&r==2)safe->processor.restoreDefaults();});};
+ preset.onClick=[this]{
+  juce::PopupMenu m;
+  m.addItem(1,"Load preset file...");
+  m.addItem(2,"Export current preset...");
+  m.addSeparator();
+  m.addItem(3,"Initialize parameters");
+  auto safe=juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
+  m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&preset),[safe](int r){
+   if(!safe)return;
+   if(r==1)safe->loadPresetFile();
+   else if(r==2)safe->savePresetFile();
+   else if(r==3)safe->processor.restoreDefaults();
+  });
+ };
  prev.onClick=next.onClick=[this]{processor.switchSlot(1-processor.getSlot());updateButtons();};
- save.onClick=[this]{juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,"Skelly DeEsser","Preset and A/B state are saved with your host project.");};
+ save.onClick=[this]{savePresetFile();};
  aspect.setFixedAspectRatio(1.5);setConstrainer(&aspect);setResizable(true,true);
  setSize((int)p.apvts.state.getProperty("editorWidth",1152),(int)p.apvts.state.getProperty("editorHeight",768));
 
@@ -51,7 +82,11 @@ SkellyDeEsserAudioProcessorEditor::~SkellyDeEsserAudioProcessorEditor(){setLookA
 void SkellyDeEsserAudioProcessorEditor::setFloat(const char* id,float v){
  if(auto*p=processor.apvts.getParameter(id)){
   auto*r=dynamic_cast<juce::RangedAudioParameter*>(p);
-  if(r){r->beginChangeGesture();r->setValueNotifyingHost(r->convertTo0to1(v));r->endChangeGesture();}}
+  if(r){
+   const auto range=r->getNormalisableRange();
+   v=range.snapToLegalValue(juce::jlimit(range.start,range.end,v));
+   r->beginChangeGesture();r->setValueNotifyingHost(r->convertTo0to1(v));r->endChangeGesture();
+  }}
 }
 void SkellyDeEsserAudioProcessorEditor::setChoice(const char*id,int n){setFloat(id,(float)n);updateButtons();}
 void SkellyDeEsserAudioProcessorEditor::updateButtons(){
@@ -64,54 +99,178 @@ void SkellyDeEsserAudioProcessorEditor::updateButtons(){
  preset.setButtonText(processor.apvts.state.getProperty("slot","A").toString()+": "+
                       processor.apvts.state.getProperty("presetName","My Default Preset").toString());
 }
+// Portable preset files wrap the same host-compatible state document that
+// already stores both A/B slots, the selected slot, and editor properties.
+void SkellyDeEsserAudioProcessorEditor::savePresetFile(){
+ const auto defaultName=processor.apvts.state.getProperty("presetName","My Default Preset").toString();
+ auto destination=juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+                   .getChildFile(defaultName + ".skelly");
+ presetChooser=std::make_unique<juce::FileChooser>("Export Skelly DeEsser preset",destination,"*.skelly");
+ const auto safe=juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
+ presetChooser->launchAsync(juce::FileBrowserComponent::saveMode |
+                            juce::FileBrowserComponent::canSelectFiles |
+                            juce::FileBrowserComponent::warnAboutOverwriting,
+  [safe](const juce::FileChooser& chooser){
+   if(!safe)return;
+   auto file=chooser.getResult();
+   if(file==juce::File{})return;
+   if(!file.hasFileExtension(".skelly"))file=file.withFileExtension(".skelly");
+   auto& p=safe->processor;
+   p.apvts.state.setProperty("presetName",file.getFileNameWithoutExtension(),nullptr);
+   juce::MemoryBlock data;
+   p.getStateInformation(data);
+   if(!file.replaceWithData(data.getData(),data.getSize()))
+    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,"Skelly DeEsser",
+                                           "Could not export preset to the selected location.");
+   safe->updateButtons();
+  });
+}
+void SkellyDeEsserAudioProcessorEditor::loadPresetFile(){
+ auto folder=juce::File::getSpecialLocation(juce::File::userDocumentsDirectory);
+ presetChooser=std::make_unique<juce::FileChooser>("Load Skelly DeEsser preset",folder,"*.skelly");
+ const auto safe=juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
+ presetChooser->launchAsync(juce::FileBrowserComponent::openMode |
+                            juce::FileBrowserComponent::canSelectFiles,
+  [safe](const juce::FileChooser& chooser){
+   if(!safe)return;
+   auto file=chooser.getResult();
+   if(file==juce::File{})return;
+   juce::MemoryBlock data;
+   if(file.getSize()<1 || file.getSize()>4*1024*1024 || !file.loadFileAsData(data)){
+    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,"Skelly DeEsser",
+                                           "Preset file is missing, unreadable or too large.");
+    return;
+   }
+   if(!safe->processor.loadValidatedPresetData(data.getData(),(int)data.getSize())){
+    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,"Skelly DeEsser",
+                                           "This is not a valid Skelly DeEsser preset.");
+    return;
+   }
+   safe->updateButtons();
+  });
+}
 void SkellyDeEsserAudioProcessorEditor::showSettings(){
- juce::PopupMenu m;m.addItem(1,"Init");m.addItem(2,"Copy A to B");m.addSeparator();
- m.addSectionHeader("DSP controls (host automation available)");
- m.addItem(3,"Ratio +0.5");m.addItem(4,"Max reduction +1 dB");
- m.addItem(5,"Attack +1 ms");m.addItem(6,"Release +10 ms");
- m.addItem(7,"Stereo link 100%");m.addItem(8,"Output gain 0 dB");
- m.addSeparator();m.addItem(9,"About Skelly DeEsser 1.0");
- auto safe = juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
-  m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&settings),[safe](int r){
+ juce::PopupMenu m;
+ m.addItem(1,"Reset parameters to defaults");
+ m.addItem(2,"Copy A to B");
+ m.addSeparator();
+ m.addSectionHeader("DE-ESSING CONTROLS");
+ // Each option is a real host-automatable APVTS parameter, not an editor-only knob.
+ // The checked values are displayed in the submenu titles.
+ struct MenuParam {const char* key;const char* name;const char* units;float step;int base;};
+ constexpr MenuParam menuParams[] = {
+  {"ratio","Ratio",":1",.5f,100},
+  {"range","Maximum reduction"," dB",1.f,110},
+  {"attack","Attack"," ms",.5f,120},
+  {"release","Release"," ms",10.f,130},
+  {"stereoLink","Stereo link","%",10.f,140},
+  {"outputGain","Output gain"," dB",.5f,150}
+ };
+ for(const auto& p:menuParams){
+  const auto value=processor.apvts.getRawParameterValue(p.key)->load();
+  juce::PopupMenu sub;
+  sub.addItem(p.base+1,"Decrease by " + juce::String(p.step,1) + p.units);
+  sub.addItem(p.base+2,"Increase by " + juce::String(p.step,1) + p.units);
+  sub.addItem(p.base+3,"Reset to default");
+  m.addSubMenu(juce::String(p.name) + "  " + juce::String(value,1) + p.units,sub);
+ }
+ m.addSeparator();
+ m.addItem(9,"About Skelly DeEsser V6");
+ const auto safe=juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
+ m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&settings),[safe](int r){
   if(!safe)return;
-  auto&self=*safe;
-  auto add=[&](const char*k,float step){self.setFloat(k,self.processor.apvts.getRawParameterValue(k)->load()+step);};
-  switch(r){case 1:self.processor.restoreDefaults();break;
-  case 2:self.processor.copyAToB();break;
-  case 3:add("ratio",.5f);break;case 4:add("range",1);break;case 5:add("attack",1);break;
-  case 6:add("release",10);break;case 7:self.setFloat("stereoLink",100);break;
-  case 8:self.setFloat("outputGain",0);break;
-  case 9:juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,"Skelly DeEsser","Original stereo de-esser — JUCE / Skelly Audio");break;
-  default:break;}
+  auto& self=*safe;
+  if(r==1){self.processor.restoreDefaults();return;}
+  if(r==2){self.processor.copyAToB();return;}
+  if(r==9){
+   juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,"Skelly DeEsser V6",
+    "Gothic stereo de-esser. Zero reported latency, split/wide processing, and full host automation.");
+   return;
+  }
+  constexpr struct ParamEntry {const char* key;float step;int base;} entries[] = {
+   {"ratio",.5f,100},{"range",1.f,110},{"attack",.5f,120},
+   {"release",10.f,130},{"stereoLink",10.f,140},{"outputGain",.5f,150}
+  };
+  for(const auto& p:entries) {
+   if(r>=p.base+1 && r<=p.base+3){
+    auto* parameter=dynamic_cast<juce::RangedAudioParameter*>(self.processor.apvts.getParameter(p.key));
+    if(parameter==nullptr)return;
+    if(r==p.base+3){
+     parameter->beginChangeGesture();
+     parameter->setValueNotifyingHost(parameter->getDefaultValue());
+     parameter->endChangeGesture();
+    }else{
+     const float delta=(r==p.base+1 ? -p.step : p.step);
+     self.setFloat(p.key,self.processor.apvts.getRawParameterValue(p.key)->load()+delta);
+    }
+    return;
+   }
+  }
  });
 }
 void SkellyDeEsserAudioProcessorEditor::paint(juce::Graphics&g){
- g.fillAll(Theme::black);
  const float sx=getWidth()/1536.f,sy=getHeight()/1024.f;
  g.addTransform(juce::AffineTransform::scale(sx,sy));
- draw(g,stageArt,352,213,1137,650);draw(g,leftArt,51,198,254,659);
- g.setColour(Theme::dim.withAlpha(.65f));g.drawRect(350,216,1138,643,1);
- for(int y=312;y<845;y+=93)Theme::line(g,353,(float)y,1486,(float)y,.09f);
- // Keep artwork prominent while preserving contrast with functional overlays.
- draw(g,artFrame,0,0,1536,1024);
- draw(g,artSkull,624,0,288,242);
- g.setColour(Theme::neon);g.setFont(Theme::font(64,true));g.drawText("SKELLY",80,67,300,77,juce::Justification::centredLeft);
- title(g,"DeEsser",{120,135,195,35},25);
- title(g,"THRESHOLD",{677,245,193,42},26);
- Theme::line(g,576,267,678,267,.8f);Theme::line(g,867,267,964,267,.8f);
- draw(g,faderArt,733,295,75,482);
- const float sideDb=processor.engine.sidechainLevelDb.load();
+ // All layered gothic artwork is composited in staticBackdrop at construction.
+ if(staticBackdrop.isValid())
+  draw(g,staticBackdrop,0,0,1536,1024);
+ else g.fillAll(Theme::black);
+
+ // All labels, meter graphics and user controls remain dynamic and sharp.
+ g.setColour(Theme::neon.withAlpha(.20f));
+ g.setFont(Theme::font(68,true,true));
+ g.drawText("SKELLY",79,64,312,92,juce::Justification::centredLeft);
+ g.setColour(Theme::neon);
+ g.setFont(Theme::font(66,true,true));
+ g.drawText("SKELLY",83,62,312,92,juce::Justification::centredLeft);
+ title(g,"DeEsser",{130,142,193,31},24);
+ title(g,"THRESHOLD",{676,245,191,42},26);
+ Theme::line(g,576,267,678,267,.65f);
+ Theme::line(g,866,267,965,267,.65f);
+
+ // The threshold cap is a real slider child. Only the live sidechain meter and
+ // housing are painted here; the cap is then rendered above by LookAndFeel.
+ draw(g,faderArt,729,296,80,480);
+ const float sideDb=juce::jlimit(-60.f,0.f,processor.engine.sidechainLevelDb.load());
  const float fill=juce::jlimit(0.f,1.f,(sideDb+60.f)/60.f);
- const float yBottom=758.f,fillHeight=445.f*fill;
- juce::ColourGradient grad(juce::Colour::fromRGB(182,255,42),767,yBottom-fillHeight,Theme::neon,767,yBottom,false);
- g.setGradientFill(grad);g.fillRoundedRectangle(748.f,yBottom-fillHeight,39.f,fillHeight,3.f);
- for(int i=0;i<=30;++i){float y=310.f+i*(445.f/30.f);
-  Theme::line(g,i%5?811.f:808.f,y,i%5?820.f:828.f,y,i%5?.52f:1.f);
-  if(i%5==0)title(g,juce::String(-2*i),{835,(int)y-14,65,27},20);
+ constexpr float channelX=753.f,channelW=30.f,top=314.f,bottom=755.f;
+ const float fillHeight=(bottom-top)*fill;
+ g.setColour(Theme::black.withAlpha(.52f));
+ g.fillRoundedRectangle(channelX,top,channelW,bottom-top,3.f);
+ if(fillHeight>0.3f){
+  g.setColour(Theme::neon.withAlpha(.21f));
+  g.fillRoundedRectangle(channelX-3.f,bottom-fillHeight,channelW+6.f,fillHeight,4.f);
+  juce::ColourGradient grad(juce::Colour::fromRGB(182,255,42),768.f,bottom-fillHeight,
+                            Theme::neon,768.f,bottom,false);
+  g.setGradientFill(grad);
+  g.fillRoundedRectangle(channelX,bottom-fillHeight,channelW,fillHeight,2.f);
  }
- title(g,"1k",{75,529,43,24},15);title(g,"20k",{243,529,47,24},15);
- g.setColour(Theme::bright);g.setFont(Theme::font(18));g.drawText("GAIN REDUCTION  "+juce::String(processor.engine.gainReductionDb.load(),1)+" dB",1084,798,355,35,juce::Justification::centredRight);
+ for(int i=0;i<=30;++i){
+  const float y=310.f+i*(445.f/30.f);
+  Theme::line(g,i%5?812.f:808.f,y,i%5?819.f:827.f,y,i%5?.45f:.90f);
+  if(i%5==0)title(g,juce::String(-2*i),{837,(int)y-14,66,27},20);
+ }
+ title(g,"1k",{76,529,43,24},15);
+ title(g,"20k",{244,529,47,24},15);
+
+ const auto reduction=juce::jmax(0.f,processor.engine.gainReductionDb.load());
+ // Separate 24 dB gain-reduction LED meter; the tall central meter is SC level.
+ constexpr float grX=1180.f,grY=773.f,grWidth=260.f;
+ for(int seg=0;seg<24;++seg){
+  const auto rect=juce::Rectangle<float>(grX+seg*(grWidth/24.f),grY,8.6f,14.f);
+  const bool active=reduction >= (float)(seg+1);
+  g.setColour(active ? (seg<12 ? Theme::neon : juce::Colour::fromRGB(191,255,54)) : Theme::dim.withAlpha(.52f));
+  g.fillRoundedRectangle(rect,2.f);
+ }
+ g.setColour(Theme::label);
+ g.setFont(Theme::font(18));
+ g.drawText("SC LEVEL  " + juce::String(sideDb,1) + " dBFS",
+            910,800,264,35,juce::Justification::centredLeft);
+ g.setColour(reduction>.05f?Theme::bright:Theme::label);
+ g.drawText("GAIN REDUCTION  " + juce::String(reduction,1) + " dB",
+            1182,800,256,35,juce::Justification::centredRight);
 }
+
 void SkellyDeEsserAudioProcessorEditor::resized(){
  const auto sx=getWidth()/1536.f,sy=getHeight()/1024.f;
  auto place=[sx,sy](juce::Component&c,int x,int y,int w,int h){c.setBounds(juce::roundToInt(x*sx),juce::roundToInt(y*sy),juce::roundToInt(w*sx),juce::roundToInt(h*sy));};

@@ -12,7 +12,10 @@ const juce::Colour value = juce::Colour::fromRGB(216,255,216);
 inline const juce::Rectangle<int> left{50,200,255,660};
 inline const juce::Rectangle<int> stage{350,215,1140,645};
 inline const juce::Rectangle<int> fader{703,297,132,474};
-inline juce::Font font(float sz, bool bold=false) {return juce::Font(juce::FontOptions(juce::Font::getDefaultSansSerifFontName(),sz,bold ? juce::Font::bold : juce::Font::plain));}
+inline juce::Font font(float sz, bool bold=false, bool italic=false) {
+ const int style=(bold ? juce::Font::bold : 0) | (italic ? juce::Font::italic : 0);
+ return juce::Font(juce::FontOptions(juce::Font::getDefaultSansSerifFontName(),sz,style));
+}
 inline void line(juce::Graphics& g, float x1,float y1,float x2,float y2,float a=.6f) {
  g.setColour(neon.withAlpha(a)); g.drawLine(x1,y1,x2,y2,1.0f);
 }

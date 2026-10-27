@@ -12,6 +12,8 @@ public:
 private:
  void timerCallback()override;
  void showSettings();
+ void savePresetFile();
+ void loadPresetFile();
  void updateButtons();
  void setChoice(const char*,int);
  void setFloat(const char*,float);
@@ -25,8 +27,9 @@ private:
  IconButton prev{"PREV"},next{"NEXT"},save{"SAVE"},settings{"MENU"},preset{"A: My Default Preset"};
  SectionHeader detectHeader{"DETECTION"},frequencyHeader{"FREQUENCY"},sideHeader{"SIDECHAIN"},monitorHeader{"MONITOR"};
  WaveformBackdrop waveform;
- juce::Image artFrame,artSkull,stageArt,leftArt,faderArt,capArt,knobArt;
+ juce::Image artFrame,artSkull,stageArt,leftArt,faderArt,capArt,knobArt,staticBackdrop;
  juce::ComponentBoundsConstrainer aspect;
+ std::unique_ptr<juce::FileChooser> presetChooser;
  std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> frequencyAttach,thresholdAttach;
  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SkellyDeEsserAudioProcessorEditor)
 };

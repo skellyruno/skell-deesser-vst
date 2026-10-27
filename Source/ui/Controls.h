@@ -1,5 +1,6 @@
 #pragma once
 #include "Theme.h"
+#include <cmath>
 
 class SectionHeader:public juce::Component {
 public:
@@ -28,12 +29,19 @@ public:
  void paint(juce::Graphics& g) override {
   std::array<float, WaveformHistory::length> values{};
   history.copy(values.data(), static_cast<unsigned>(values.size()));
-  const auto w = (float)getWidth(), mid = getHeight() * .5f;
-  g.setColour(Theme::mid.withAlpha(.35f));
-  for (unsigned i = 0; i < values.size(); ++i) {
-   const float x = w * (i + .5f) / values.size();
-   const float amplitude = juce::jlimit(1.f, mid*.85f, values[i]*mid*.85f);
-   g.drawLine(x, mid-amplitude, x, mid+amplitude, 1.5f);
+  const float w=(float)getWidth(),mid=getHeight()*.5f;
+  const float scale=w/1064.f;
+  // Leave an unobstructed gap for the threshold rail in the middle of the stage.
+  const float railCentre=371.f*scale,railHalf=92.f*scale;
+  for(unsigned i=0;i<values.size();++i){
+   const float x=w*(i+.5f)/values.size();
+   if(std::abs(x-railCentre)<railHalf)continue;
+   const float peak=juce::jlimit(0.f,1.f,values[i]);
+   const float amplitude=juce::jmax(1.f,std::sqrt(peak)*mid*.78f);
+   g.setColour(Theme::mid.withAlpha(.21f));
+   g.drawLine(x,mid-amplitude-2.f,x,mid+amplitude+2.f,3.f);
+   g.setColour(Theme::bright.withAlpha(.36f));
+   g.drawLine(x,mid-amplitude,x,mid+amplitude,1.f);
   }
  }
  void advance(){repaint();}

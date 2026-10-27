@@ -1,0 +1,23 @@
+Skelly DeEsser V6 standalone DSP checks
+GCC C++17 -O2 -Wall -Wextra -Werror
+Date 2026-10-27
+detector RMS 150Hz 0.000000 / 5860Hz 0.696268 / 14kHz 0.186811
+waveform max 0.750; ring=256
+engine unity max error 0.000000000; reduction 23.95 dB
+band 8000 Hz: reconstruction 1.1e-16, peak 0.3049
+band 22050 Hz: reconstruction 1.1e-16, peak 0.4537
+band 44100 Hz: reconstruction 1.1e-16, peak 0.5215
+band 48000 Hz: reconstruction 1.1e-16, peak 0.5314
+band 96000 Hz: reconstruction 1.1e-16, peak 0.5778
+band 192000 Hz: reconstruction 1.1e-16, peak 0.5267
+split amplitudes 150 0.24960 / 5860 0.08903 ; wide 150 0.03147 / 5860 0.03777
+automation stress 8000 Hz: 11.87 ms (informational)
+automation stress 22050 Hz: 12.62 ms (informational)
+automation stress 44100 Hz: 11.94 ms (informational)
+automation stress 48000 Hz: 11.74 ms (informational)
+automation stress 96000 Hz: 11.65 ms (informational)
+automation stress 192000 Hz: 11.25 ms (informational)
+engine regression checks passed
+Clang smoke tests: PASS
+GCC UndefinedBehaviorSanitizer: PASS
+JUCE / Windows compilation: NOT RUN (JUCE SDK not available)

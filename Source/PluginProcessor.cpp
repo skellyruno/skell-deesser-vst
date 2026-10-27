@@ -28,6 +28,19 @@ SkellyDeEsserAudioProcessor::SkellyDeEsserAudioProcessor():
  apvts.state.setProperty("slot","A",nullptr);
  apvts.state.setProperty("editorWidth",1152,nullptr);
  apvts.state.setProperty("editorHeight",768,nullptr);
+ // Cache APVTS atomic pointers once; never perform parameter-ID lookups on the audio thread.
+ params.threshold=apvts.getRawParameterValue("threshold");
+ params.frequency=apvts.getRawParameterValue("frequency");
+ params.ratio=apvts.getRawParameterValue("ratio");
+ params.range=apvts.getRawParameterValue("range");
+ params.attack=apvts.getRawParameterValue("attack");
+ params.release=apvts.getRawParameterValue("release");
+ params.stereoLink=apvts.getRawParameterValue("stereoLink");
+ params.outputGain=apvts.getRawParameterValue("outputGain");
+ params.detectMode=apvts.getRawParameterValue("detectMode");
+ params.sidechainFilterType=apvts.getRawParameterValue("sidechainFilterType");
+ params.monitorMode=apvts.getRawParameterValue("monitorMode");
+ params.sidechainHpf=apvts.getRawParameterValue("sidechainHpf");
  slotA=apvts.copyState();slotB=slotA.createCopy();
 }
 void SkellyDeEsserAudioProcessor::prepareToPlay(double sampleRate,int){engine.prepare(sampleRate);setLatencySamples(0);}
@@ -38,11 +51,19 @@ bool SkellyDeEsserAudioProcessor::isBusesLayoutSupported(const BusesLayout& l)co
 void SkellyDeEsserAudioProcessor::processBlock(juce::AudioBuffer<float>& audio,juce::MidiBuffer&){
  juce::ScopedNoDenormals noDenormals;
  for(int c=getTotalNumInputChannels();c<audio.getNumChannels();++c)audio.clear(c,0,audio.getNumSamples());
- auto get=[this](const char* name){return apvts.getRawParameterValue(name)->load();};
  DeEsserEngine::Settings s;
- s.threshold=get("threshold");s.frequency=get("frequency");s.ratio=get("ratio");s.range=get("range");
- s.attack=get("attack");s.release=get("release");s.link=get("stereoLink");s.output=get("outputGain");
- s.mode=(int)get("detectMode");s.filterType=(int)get("sidechainFilterType");s.monitor=(int)get("monitorMode");s.hpf=get("sidechainHpf")>.5f;
+ s.threshold=params.threshold->load(std::memory_order_relaxed);
+ s.frequency=params.frequency->load(std::memory_order_relaxed);
+ s.ratio=params.ratio->load(std::memory_order_relaxed);
+ s.range=params.range->load(std::memory_order_relaxed);
+ s.attack=params.attack->load(std::memory_order_relaxed);
+ s.release=params.release->load(std::memory_order_relaxed);
+ s.link=params.stereoLink->load(std::memory_order_relaxed);
+ s.output=params.outputGain->load(std::memory_order_relaxed);
+ s.mode=(int)params.detectMode->load(std::memory_order_relaxed);
+ s.filterType=(int)params.sidechainFilterType->load(std::memory_order_relaxed);
+ s.monitor=(int)params.monitorMode->load(std::memory_order_relaxed);
+ s.hpf=params.sidechainHpf->load(std::memory_order_relaxed)>.5f;
  engine.process(audio,s);
 }
 juce::AudioProcessorEditor* SkellyDeEsserAudioProcessor::createEditor(){return new SkellyDeEsserAudioProcessorEditor(*this);}
@@ -92,6 +113,14 @@ void SkellyDeEsserAudioProcessor::setStateInformation(const void* data,int size)
    activeSlot=apvts.state.getProperty("slot","A").toString()=="B"?1:0;
   }
  }
+}
+bool SkellyDeEsserAudioProcessor::loadValidatedPresetData(const void* data,int size){
+ if(size<=0 || size>4*1024*1024)return false;
+ const auto xml=getXmlFromBinary(data,size);
+ if(!xml)return false;
+ if(!xml->hasTagName("SkellyDocument") && !xml->hasTagName(apvts.state.getType().toString()))return false;
+ setStateInformation(data,size);
+ return true;
 }
 void SkellyDeEsserAudioProcessor::restoreDefaults(){
  for(auto* p:getParameters())if(auto* ranged=dynamic_cast<juce::RangedAudioParameter*>(p)){
