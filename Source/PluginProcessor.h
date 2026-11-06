@@ -45,6 +45,8 @@ private:
   std::atomic<float>* sidechainFilterType=nullptr;
   std::atomic<float>* monitorMode=nullptr;
   std::atomic<float>* sidechainHpf=nullptr;
+  std::atomic<float>* phraseAware=nullptr;
+  std::atomic<float>* phraseSensitivity=nullptr;
  } params;
  int activeSlot=0;
  juce::ValueTree slotA,slotB;

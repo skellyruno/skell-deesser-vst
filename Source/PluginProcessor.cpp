@@ -19,6 +19,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout SkellyDeEsserAudioProcessor:
  l.add(std::make_unique<APF>(id("release"),"Release",juce::NormalisableRange<float>(10.f,500.f,1.f),85.f));
  l.add(std::make_unique<APF>(id("stereoLink"),"Stereo Link",juce::NormalisableRange<float>(0.f,100.f,1.f),100.f));
  l.add(std::make_unique<APF>(id("outputGain"),"Output",juce::NormalisableRange<float>(-12.f,12.f,.1f),0.f));
+ // Preserve the existing Split/Wide choice ID and indices for old projects.
+ // Phrase-Aware is a separate automatable toggle, not a third legacy choice.
+ l.add(std::make_unique<APB>(id("phraseAware"),"Phrase-Aware",false));
+ l.add(std::make_unique<APF>(id("phraseSensitivity"),"Phrase Sensitivity",juce::NormalisableRange<float>(1.f,12.f,.5f),5.f));
  return l;
 }
 SkellyDeEsserAudioProcessor::SkellyDeEsserAudioProcessor():
@@ -26,8 +30,9 @@ SkellyDeEsserAudioProcessor::SkellyDeEsserAudioProcessor():
  apvts(*this,nullptr,"SkellyState",makeParameters()){
  apvts.state.setProperty("presetName","My Default Preset",nullptr);
  apvts.state.setProperty("slot","A",nullptr);
- apvts.state.setProperty("editorWidth",1152,nullptr);
- apvts.state.setProperty("editorHeight",768,nullptr);
+ apvts.state.setProperty("editorWidth",633,nullptr);
+ apvts.state.setProperty("editorHeight",422,nullptr);
+ apvts.state.setProperty("compactLayoutV7",true,nullptr);
  // Cache APVTS atomic pointers once; never perform parameter-ID lookups on the audio thread.
  params.threshold=apvts.getRawParameterValue("threshold");
  params.frequency=apvts.getRawParameterValue("frequency");
@@ -41,6 +46,8 @@ SkellyDeEsserAudioProcessor::SkellyDeEsserAudioProcessor():
  params.sidechainFilterType=apvts.getRawParameterValue("sidechainFilterType");
  params.monitorMode=apvts.getRawParameterValue("monitorMode");
  params.sidechainHpf=apvts.getRawParameterValue("sidechainHpf");
+ params.phraseAware=apvts.getRawParameterValue("phraseAware");
+ params.phraseSensitivity=apvts.getRawParameterValue("phraseSensitivity");
  slotA=apvts.copyState();slotB=slotA.createCopy();
 }
 void SkellyDeEsserAudioProcessor::prepareToPlay(double sampleRate,int){engine.prepare(sampleRate);setLatencySamples(0);}
@@ -61,6 +68,8 @@ void SkellyDeEsserAudioProcessor::processBlock(juce::AudioBuffer<float>& audio,j
  s.link=params.stereoLink->load(std::memory_order_relaxed);
  s.output=params.outputGain->load(std::memory_order_relaxed);
  s.mode=(int)params.detectMode->load(std::memory_order_relaxed);
+ if(params.phraseAware->load(std::memory_order_relaxed)>.5f)s.mode=2;
+ s.phraseSensitivity=params.phraseSensitivity->load(std::memory_order_relaxed);
  s.filterType=(int)params.sidechainFilterType->load(std::memory_order_relaxed);
  s.monitor=(int)params.monitorMode->load(std::memory_order_relaxed);
  s.hpf=params.sidechainHpf->load(std::memory_order_relaxed)>.5f;

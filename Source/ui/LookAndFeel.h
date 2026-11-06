@@ -40,23 +40,38 @@ public:
    return;
   }
   if(text=="MENU"){
-   const float x=b.getWidth()*.28f,w=b.getWidth()*.44f;
-   for(int i=-1;i<=1;++i)g.drawLine(x,b.getHeight()*.5f+i*7,x+w,b.getHeight()*.5f+i*7,2.4f);
+   const float x=b.getWidth()*.26f,w=b.getWidth()*.48f;
+   const float gap=juce::jmax(3.f,b.getHeight()*.13f);
+   for(int i=-1;i<=1;++i)
+    g.drawLine(x,b.getHeight()*.5f+i*gap,x+w,b.getHeight()*.5f+i*gap,
+               juce::jmax(1.2f,b.getWidth()*.055f));
    return;
   }
   if(text=="SAVE"){
-   auto r=b.getLocalBounds().toFloat().withSizeKeepingCentre(24.f,25.f);
-   g.drawRoundedRectangle(r,1.5f,2.f);g.fillRect(r.getX()+5,r.getY()+3,13.f,7.f);
-   g.drawRect(r.getX()+5,r.getY()+14,14.f,9.f,1.6f);return;
+   const float side=juce::jmin(b.getWidth(),b.getHeight())*.60f;
+   auto r=b.getLocalBounds().toFloat().withSizeKeepingCentre(side,side*1.06f);
+   const float u=side/24.f;
+   g.drawRoundedRectangle(r,1.5f*u,juce::jmax(1.f,2.f*u));
+   g.fillRect(r.getX()+5*u,r.getY()+3*u,13*u,7*u);
+   g.drawRect(r.getX()+5*u,r.getY()+14*u,14*u,9*u,juce::jmax(1.f,1.6f*u));
+   return;
   }
   if(text=="HPF"){
-   juce::Path path; const float x=b.getWidth()*.28f,y=b.getHeight()*.69f;
-   path.startNewSubPath(x,y);path.lineTo(x+11,y);path.lineTo(x+29,y-19);path.lineTo(x+47,y-19);
-   g.strokePath(path,juce::PathStrokeType(2.5f));return;
+   // Scale the path to actual button bounds (the compact view is only 55%).
+   const float left=b.getWidth()*.20f, right=b.getWidth()*.80f;
+   const float low=b.getHeight()*.69f,high=b.getHeight()*.33f;
+   juce::Path path;
+   path.startNewSubPath(left,low);
+   path.lineTo(left+(right-left)*.25f,low);
+   path.lineTo(left+(right-left)*.65f,high);
+   path.lineTo(right,high);
+   g.strokePath(path,juce::PathStrokeType(juce::jmax(1.4f,b.getWidth()*.045f)));
+   return;
   }
   const bool preset=text.contains("Default Preset")||text.startsWith("A: ")||text.startsWith("B: ");
-  g.setFont(Theme::font(juce::jmin(preset?17.f:18.f,b.getHeight()*.42f),true));
-  g.drawFittedText(text,bounds,juce::Justification::centred,1,.57f);
+  const float fs=juce::jlimit(9.f,22.f,b.getHeight()*(preset?.49f:.51f));
+  g.setFont(Theme::font(fs,true));
+  g.drawFittedText(text,bounds,juce::Justification::centred,1,.68f);
  }
  void drawLinearSlider(juce::Graphics&g,int x,int y,int w,int h,float, float,float,juce::Slider::SliderStyle,juce::Slider& slider) override {
   // Do not paint a black backing plate over the housing and live meter.

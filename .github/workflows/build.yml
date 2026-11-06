@@ -1,9 +1,7 @@
-name: Build Windows VST3
-on:
-  workflow_dispatch:
-
+name: Build Skelly DeEsser
+on: [workflow_dispatch, push]
 jobs:
-  build:
+  windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,11 +12,23 @@ jobs:
       - name: Package
         shell: pwsh
         run: |
-          $plugin = Get-ChildItem -Path build -Directory -Recurse -Filter '*.vst3' | Select-Object -First 1
-          if (-not $plugin) { throw 'VST3 bundle missing' }
-          Compress-Archive -Path $plugin.FullName -DestinationPath SkellPlugin-Windows-VST3.zip
+          $plugin = Get-ChildItem build -Directory -Recurse -Filter 'Skelly DeEsser.vst3' | Select-Object -First 1
+          if (!$plugin) { throw 'VST3 bundle missing' }
+          Compress-Archive -Path $plugin.FullName -DestinationPath SkellyDeEsser-Windows-VST3.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: SkellPlugin-Windows-VST3
-          path: SkellPlugin-Windows-VST3.zip
-          if-no-files-found: error
+          name: SkellyDeEsser-Windows-VST3
+          path: SkellyDeEsser-Windows-VST3.zip
+
+  dsp-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run DSP tests with GCC and UBSan
+        shell: bash
+        run: |
+          CXX=g++ bash tests/run_smoke.sh
+          for test in filter_smoke waveform_smoke engine_smoke band_regression engine_regression phrase_aware_regression; do
+            g++ -std=c++17 -O1 -g -fsanitize=undefined -fno-sanitize-recover=all -Itests/juce_stub "tests/${test}.cpp" -o "/tmp/skelly_ubsan_${test}"
+            "/tmp/skelly_ubsan_${test}"
+          done

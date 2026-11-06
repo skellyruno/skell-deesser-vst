@@ -1,0 +1,24 @@
+detector RMS 150Hz 0.000000 / 5860Hz 0.696268 / 14kHz 0.186811
+waveform max 0.750; ring=256
+engine unity max error 0.000000000; reduction 23.95 dB
+band 8000 Hz: reconstruction 1.1e-16, peak 0.3049
+band 22050 Hz: reconstruction 1.1e-16, peak 0.4537
+band 44100 Hz: reconstruction 1.1e-16, peak 0.5215
+band 48000 Hz: reconstruction 1.1e-16, peak 0.5314
+band 96000 Hz: reconstruction 1.1e-16, peak 0.5778
+band 192000 Hz: reconstruction 1.1e-16, peak 0.5267
+split amplitudes 150 0.24960 / 5860 0.08903 ; wide 150 0.03147 / 5860 0.03777
+automation stress 8000 Hz: 15.44 ms (informational)
+automation stress 22050 Hz: 16.06 ms (informational)
+automation stress 44100 Hz: 16.09 ms (informational)
+automation stress 48000 Hz: 14.73 ms (informational)
+automation stress 96000 Hz: 14.07 ms (informational)
+automation stress 192000 Hz: 14.07 ms (informational)
+engine regression checks passed
+Phrase Aware amplitudes normal1 0.04516 normal2 0.04519 loud 0.10182 next 0.04482
+Fixed Split   amplitudes normal1 0.01350 normal2 0.01350 loud 0.05916 next 0.01327
+Quiet recording: normal 0.00904, loud 0.02036 (raw .009 / .040)
+phrase-aware regression passed
+
+Additional validation: GCC and Clang regression suites PASS; GCC UBSan x6 PASS; source-layout check PASS.
+Full JUCE/MSVC, pluginval and FL Studio tests NOT run here.

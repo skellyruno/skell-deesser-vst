@@ -1,8 +1,8 @@
-# Skelly DeEsser V6 — VST3 / Standalone
+# Skelly DeEsser V8 — Phrase-Aware / Compact UI / VST3 / Standalone
 
 Skelly DeEsser is a stereo de-esser with a dark neon-green gothic user interface, selectable split-band/wideband compression, frequency-targeted sidechain, A/B snapshots, peak waveform, threshold meter, and JUCE automation.
 
-**Status:** JUCE source project; five standalone C++ tests passed with GCC and Clang. UndefinedBehaviorSanitizer tests passed with GCC. **A full JUCE/MSVC build, pluginval run, and FL Studio listening/restore test have not been run here.** Treat V6 as a development build, not a validated commercial release.
+**Status:** JUCE source project. Standalone DSP and phrase-behavior tests are included, but **a full JUCE/MSVC build, pluginval run, and FL Studio listening/restore test have not been run here.** Treat V8 as a development build, not a validated commercial release.
 
 ## Build
 
@@ -28,10 +28,11 @@ Expected VST3 bundle: `build/SkellyDeEsser_artefacts/Release/VST3/Skelly DeEsser
 
 - **Frequency (1 kHz–20 kHz)** selects the detector's sibilance region and the split-band cutoffs. Frequencies above the sample-rate-dependent safe limit are internally clamped, without changing the saved knob value.
 - **Threshold (-60 to 0 dB)** sets the compression threshold, with 6 dB soft knee, ratio and range controls. The vertical meter indicates **sidechain envelope level**, not reduction.
+- **Phrase (new):** Click the **Phrase** button in Detection for Phrase-Aware processing. Reuses the same high-frequency detector and complementary split-band engine, but it does not reduce every S. A lightweight zero-lookahead tracker estimates phrase boundaries from broadband activity, measures one peak per completed sibilant event, and computes a robust within-phrase baseline. Subsequent sibilants are attenuated only when they exceed baseline by the **Phrase sensitivity** margin. In Phrase mode the existing Threshold fader becomes a bounded relative sensitivity bias, so quiet vocal recordings work without lowering an absolute threshold. A 450 ms gap in vocal activity resets the phrase; the first detected sibilant teaches the reference and passes without adaptive reduction. In **Settings → Phrase sensitivity**, lower dB is more sensitive; higher dB is more natural/forgiving (1–12 dB, default 5 dB). The tiny status field reads **PHRASE: LEARNING** or **PHRASE: READY [baseline]**. **The mode is acoustic, not a lyric/linguistic phrase recognizer; no ML, lookahead, or added delay.**
 - **Split:** parallel reduction of a complementary two-one-pole middle band; the dry waveform is bit-identical when gain reduction is 0 and output gain is 0 dB.
 - **Wide:** applies the same attenuation to the full-band signal.
 - **Sidechain:** optional high-pass filtering (plus Off, HPF 6, HPF 12, Band-Pass, Listen filter shapes). Changing modes smoothly crossfades the taps. Select S Chain monitor to hear the filtered detector path.
-- **Settings:** Ratio, maximum reduction, attack, release, stereo link and output gain are fully automatable; settings submenus expose increase, decrease and reset.
+- **Settings:** Ratio, maximum reduction, attack, release, stereo link, output gain and Phrase sensitivity are fully automatable; settings submenus expose increase, decrease and reset.
 - **A/B slots:** previous/next arrows switch snapshots stored in the host session. State is backward-compatible with older V1/V2 files.
 - **Preset:** click preset title to load an external `.skelly` file, export, or initialize. The floppy icon exports a `.skelly` file. The file includes both A/B snapshots and user-interface state. Session state saves automatically with the DAW.
 
@@ -42,10 +43,23 @@ Expected VST3 bundle: `build/SkellyDeEsser_artefacts/Release/VST3/Skelly DeEsser
 - Compression is a soft-knee static gain computer with attack/release envelope following; output, threshold and mode changes are smoothed. Accurate reported **0 samples of added algorithmic latency** (but IIR filters have frequency-dependent phase shift).
 - The audio path does not allocate or perform APVTS string lookups in `processBlock`. Filter coefficients update at 16-sample intervals while center frequency is smoothed. GUI/audio waveform handoff uses atomics.
 - Gain-reduction and sidechain-level displays use fast-rise, slower-release ballistic smoothing. Input waveform uses absolute stereo peak, so out-of-phase stereo is still visible.
+- The Phrase-Aware reference is ephemeral per running audio stream and is not stored in DAW presets; switching modes keeps the tracker warm for seamless transitions. The existing `detectMode` parameter stays **exactly Split (0) / Wide (1)** for compatibility with old automation. The new `phraseAware` automatable Boolean selects the third mode without remapping saved choice values.
 - Source has no licensed neural or lookahead model and has not been tested against commercial processors or real vocal benchmark sets. Sound quality and heavy-automation click performance still require listening and in-host validation.
 
 ## Offline tests
 
-Run `bash tests/run_smoke.sh` (GCC or Clang, no JUCE required). Tests include detector frequency selection, RMS envelope, waveform ring behavior, exact dry transparency, complementary-band reconstruction, mode changes, sample-rate stress and spectral amplitude comparisons. A UBSan matrix is included in GitHub Actions.
+Run `bash tests/run_smoke.sh` (GCC or Clang, no JUCE required). Tests include detector frequency selection, RMS envelope, waveform ring behavior, exact dry transparency, complementary-band reconstruction, mode changes, sample-rate stress, phrase segmentation, quiet vs loud sibilance comparisons, outlier immunity, and phrase reset. A UBSan matrix is included in GitHub Actions.
 
 Detailed changes and measurements: [V6_DEVELOPMENT_NOTES.md](V6_DEVELOPMENT_NOTES.md). Previous release notes are included as historical references; V6 supersedes their DSP descriptions.
+
+## V7 compact interface
+
+The default editor size is **633 x 422** (3:2), approximately **45% smaller in each dimension** than the V6 default of 1152 x 768. The editor remains resizable with a 540 x 360 minimum and 1536 x 1024 maximum. **Settings → Window size** offers Compact (55%), Medium (70%), Large (85%), and Original (100%). UI size changes persist in the project state. Saved V6 editor widths are migrated to the compact default once on first opening the V7 editor, then normal user resizing is preserved.
+
+UI fixes: scaled section header fonts and ornaments; fixed overlapping NEXT/preset buttons; removed double-rendered skull artwork; darkened busy grunge behind controls; adjusted readout lettering and silent waveform visibility. All changes are in JUCE code, without generating new image mockups. The V6 DSP implementation and all seven original V5 image assets are preserved.
+
+**Build status:** Standalone DSP regression tests are included. Full JUCE/MSVC and host visual tests remain necessary.
+
+## V8 Phrase-Aware development notes
+
+See [V8_PHRASE_AWARE_NOTES.md](V8_PHRASE_AWARE_NOTES.md) for algorithm, controls, known trade-offs, and measured synthetic results. Default editor remains 633 × 422 (45% smaller in each dimension than the original 1152 × 768). No new image assets were added.

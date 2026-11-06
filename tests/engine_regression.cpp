@@ -52,7 +52,8 @@ int main() {
    s.ratio=1.f+19.f*((chunk*7)%101)/100.f;
    s.range=24.f*((chunk*19)%101)/100.f;
    s.filterType=chunk%5;s.hpf=(chunk%2)==0;
-   s.mode=chunk%2;s.monitor=(chunk%5)==4;
+   s.mode=chunk%3;s.phraseSensitivity=1.f+11.f*((chunk*13)%101)/100.f;
+   s.monitor=(chunk%5)==4;
    s.link=(float)(chunk%101);s.output=(float)((chunk%25)-12);
    for(int c=0;c<audio.getNumChannels();++c)
     for(int i=0;i<n;++i)

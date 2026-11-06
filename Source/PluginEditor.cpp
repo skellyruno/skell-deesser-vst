@@ -9,7 +9,6 @@ void title(juce::Graphics&g,const juce::String&txt,juce::Rectangle<int>r,int siz
 SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEsserAudioProcessor& p):
  AudioProcessorEditor(&p),processor(p),waveform(p.engine.waveform){
  artFrame=load(BinaryData::frame_png,BinaryData::frame_pngSize);
- artSkull=load(BinaryData::skull_emblem_png,BinaryData::skull_emblem_pngSize);
  stageArt=load(BinaryData::stage_bg_png,BinaryData::stage_bg_pngSize);
  leftArt=load(BinaryData::left_panel_bg_png,BinaryData::left_panel_bg_pngSize);
  faderArt=load(BinaryData::fader_housing_png,BinaryData::fader_housing_pngSize);
@@ -21,24 +20,35 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  {
   juce::Graphics art(staticBackdrop);
   art.fillAll(Theme::black);
+  // Keep the detailed artwork, but move it behind clean, dark control surfaces.
+  // The screenshot from V6 was difficult to read because the stage texture,
+  // framed sidebar and a second emblem were competing with the real controls.
   {
    juce::Graphics::ScopedSaveState save(art);
-   art.setOpacity(0.88f);
+   art.setOpacity(0.68f);
    draw(art,stageArt,352,213,1137,650);
   }
+  art.setColour(Theme::black.withAlpha(0.48f));
+  art.fillRoundedRectangle(369.f,224.f,1096.f,615.f,12.f);
   {
    juce::Graphics::ScopedSaveState save(art);
-   art.setOpacity(0.94f);
+   art.setOpacity(0.63f);
    draw(art,leftArt,51,198,254,659);
   }
-  // The generated frame uses transparent cutouts; it must go above both panels.
-  draw(art,artFrame,0,0,1536,1024);
-  draw(art,artSkull,635,0,266,241);
+  art.setColour(Theme::black.withAlpha(0.62f));
+  art.fillRoundedRectangle(66.f,211.f,218.f,634.f,7.f);
+  // One emblem only. The frame PNG already contains the center skull.
+  // An additional large skull was causing double edges and visual clutter.
+  {
+   juce::Graphics::ScopedSaveState save(art);
+   art.setOpacity(.84f);  // Reduce chrome bloom without discarding the original asset.
+   draw(art,artFrame,0,0,1536,1024);
+  }
  }
  look.setArt(knobArt,capArt);
  setLookAndFeel(&look);
  for(auto* c:{(juce::Component*)&frequency,(juce::Component*)&threshold,(juce::Component*)&frequencyValue,(juce::Component*)&thresholdValue,
-  (juce::Component*)&split,(juce::Component*)&wide,(juce::Component*)&audio,(juce::Component*)&sidechain,
+  (juce::Component*)&split,(juce::Component*)&wide,(juce::Component*)&phraseButton,(juce::Component*)&audio,(juce::Component*)&sidechain,
   (juce::Component*)&hpf,(juce::Component*)&filter,(juce::Component*)&prev,(juce::Component*)&next,
   (juce::Component*)&save,(juce::Component*)&settings,(juce::Component*)&preset,
   (juce::Component*)&detectHeader,(juce::Component*)&frequencyHeader,(juce::Component*)&sideHeader,(juce::Component*)&monitorHeader,
@@ -49,7 +59,10 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  thresholdAttach=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(p.apvts,"threshold",threshold);
  frequencyValue.onTextChange=[this]{auto v=frequencyValue.getText().getFloatValue();if(v>0)setFloat("frequency",v);};
  thresholdValue.onTextChange=[this]{setFloat("threshold",thresholdValue.getText().getFloatValue());};
- split.onClick=[this]{setChoice("detectMode",0);};wide.onClick=[this]{setChoice("detectMode",1);};
+ split.onClick=[this]{setFloat("phraseAware",0.f);setChoice("detectMode",0);};
+ wide.onClick=[this]{setFloat("phraseAware",0.f);setChoice("detectMode",1);};
+ phraseButton.onClick=[this]{setChoice("detectMode",0);setFloat("phraseAware",1.f);updateButtons();};
+ phraseButton.setTooltip("Phrase-Aware: learn each vocal phrase and reduce unusually strong sibilants only.");
  audio.onClick=[this]{setChoice("monitorMode",0);};sidechain.onClick=[this]{setChoice("monitorMode",1);};
  hpf.onClick=[this]{auto*v=processor.apvts.getRawParameterValue("sidechainHpf");setFloat("sidechainHpf",v->load()>.5f?0.f:1.f);};
  filter.onClick=[this]{juce::PopupMenu m;juce::StringArray names{"Off","HPF 6 dB","HPF 12 dB","Band-Pass","Listen Filter"};
@@ -73,8 +86,22 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  };
  prev.onClick=next.onClick=[this]{processor.switchSlot(1-processor.getSlot());updateButtons();};
  save.onClick=[this]{savePresetFile();};
- aspect.setFixedAspectRatio(1.5);setConstrainer(&aspect);setResizable(true,true);
- setSize((int)p.apvts.state.getProperty("editorWidth",1152),(int)p.apvts.state.getProperty("editorHeight",768));
+ aspect.setFixedAspectRatio(1.5);
+ aspect.setSizeLimits(540,360,1536,1024);
+ setConstrainer(&aspect);
+ setResizable(true,true);
+ // 633 x 422 is 55% of the V6 1152 x 768 launch size (45% smaller).
+ // Old sessions had no UI layout revision; migrate their saved dimensions once,
+ // while preserving user resizing after the V7 layout has been installed.
+ constexpr int compactWidth=633, compactHeight=422;
+ const bool legacySize=!((bool)p.apvts.state.getProperty("compactLayoutV7",false));
+ int savedWidth=(int)p.apvts.state.getProperty("editorWidth",compactWidth);
+ int savedHeight=(int)p.apvts.state.getProperty("editorHeight",compactHeight);
+ if(legacySize){savedWidth=compactWidth;savedHeight=compactHeight;}
+ savedWidth=juce::jlimit(540,1536,savedWidth);
+ savedHeight=juce::roundToInt(savedWidth/1.5f);
+ p.apvts.state.setProperty("compactLayoutV7",true,nullptr);
+ setSize(savedWidth,savedHeight);
 
  startTimerHz(30);
 }
@@ -91,8 +118,10 @@ void SkellyDeEsserAudioProcessorEditor::setFloat(const char* id,float v){
 void SkellyDeEsserAudioProcessorEditor::setChoice(const char*id,int n){setFloat(id,(float)n);updateButtons();}
 void SkellyDeEsserAudioProcessorEditor::updateButtons(){
  auto get=[this](const char*id){return processor.apvts.getRawParameterValue(id)->load();};
- split.setToggleState(get("detectMode")<.5f,juce::dontSendNotification);
- wide.setToggleState(get("detectMode")>.5f,juce::dontSendNotification);
+ const bool phraseOn=get("phraseAware")>.5f;
+ split.setToggleState(!phraseOn && get("detectMode")<.5f,juce::dontSendNotification);
+ wide.setToggleState(!phraseOn && get("detectMode")>.5f,juce::dontSendNotification);
+ phraseButton.setToggleState(phraseOn,juce::dontSendNotification);
  audio.setToggleState(get("monitorMode")<.5f,juce::dontSendNotification);
  sidechain.setToggleState(get("monitorMode")>.5f,juce::dontSendNotification);
  hpf.setToggleState(get("sidechainHpf")>.5f,juce::dontSendNotification);
@@ -164,7 +193,8 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
   {"attack","Attack"," ms",.5f,120},
   {"release","Release"," ms",10.f,130},
   {"stereoLink","Stereo link","%",10.f,140},
-  {"outputGain","Output gain"," dB",.5f,150}
+  {"outputGain","Output gain"," dB",.5f,150},
+  {"phraseSensitivity","Phrase sensitivity"," dB above normal",.5f,160}
  };
  for(const auto& p:menuParams){
   const auto value=processor.apvts.getRawParameterValue(p.key)->load();
@@ -175,21 +205,34 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
   m.addSubMenu(juce::String(p.name) + "  " + juce::String(value,1) + p.units,sub);
  }
  m.addSeparator();
- m.addItem(9,"About Skelly DeEsser V6");
+ juce::PopupMenu sizes;
+ sizes.addItem(201,"Compact (55%)",true,getWidth()==633);
+ sizes.addItem(202,"Medium (70%)",true,getWidth()==806);
+ sizes.addItem(203,"Large (85%)",true,getWidth()==979);
+ sizes.addItem(204,"Original (100%)",true,getWidth()==1152);
+ m.addSubMenu("Window size",sizes);
+ m.addItem(9,"About Skelly DeEsser V8");
  const auto safe=juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
  m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&settings),[safe](int r){
   if(!safe)return;
   auto& self=*safe;
   if(r==1){self.processor.restoreDefaults();return;}
   if(r==2){self.processor.copyAToB();return;}
+  if(r>=201 && r<=204){
+   constexpr int widths[]{633,806,979,1152};
+   const int width=widths[r-201];
+   self.setSize(width,juce::roundToInt(width/1.5f));
+   return;
+  }
   if(r==9){
-   juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,"Skelly DeEsser V6",
-    "Gothic stereo de-esser. Zero reported latency, split/wide processing, and full host automation.");
+   juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,"Skelly DeEsser V8",
+    "Gothic stereo de-esser. Split, Wide and Phrase-Aware, zero reported latency, and host automation.");
    return;
   }
   constexpr struct ParamEntry {const char* key;float step;int base;} entries[] = {
    {"ratio",.5f,100},{"range",1.f,110},{"attack",.5f,120},
-   {"release",10.f,130},{"stereoLink",10.f,140},{"outputGain",.5f,150}
+   {"release",10.f,130},{"stereoLink",10.f,140},{"outputGain",.5f,150},
+   {"phraseSensitivity",.5f,160}
   };
   for(const auto& p:entries) {
    if(r>=p.base+1 && r<=p.base+3){
@@ -217,13 +260,13 @@ void SkellyDeEsserAudioProcessorEditor::paint(juce::Graphics&g){
  else g.fillAll(Theme::black);
 
  // All labels, meter graphics and user controls remain dynamic and sharp.
- g.setColour(Theme::neon.withAlpha(.20f));
- g.setFont(Theme::font(68,true,true));
- g.drawText("SKELLY",79,64,312,92,juce::Justification::centredLeft);
- g.setColour(Theme::neon);
+ g.setColour(Theme::neon.withAlpha(.16f));
  g.setFont(Theme::font(66,true,true));
- g.drawText("SKELLY",83,62,312,92,juce::Justification::centredLeft);
- title(g,"DeEsser",{130,142,193,31},24);
+ g.drawText("SKELLY",79,66,306,89,juce::Justification::centredLeft);
+ g.setColour(Theme::neon);
+ g.setFont(Theme::font(64,true,true));
+ g.drawText("SKELLY",83,61,306,89,juce::Justification::centredLeft);
+ title(g,"DeEsser",{134,145,190,30},24);
  title(g,"THRESHOLD",{676,245,191,42},26);
  Theme::line(g,576,267,678,267,.65f);
  Theme::line(g,866,267,965,267,.65f);
@@ -248,7 +291,7 @@ void SkellyDeEsserAudioProcessorEditor::paint(juce::Graphics&g){
  for(int i=0;i<=30;++i){
   const float y=310.f+i*(445.f/30.f);
   Theme::line(g,i%5?812.f:808.f,y,i%5?819.f:827.f,y,i%5?.45f:.90f);
-  if(i%5==0)title(g,juce::String(-2*i),{837,(int)y-14,66,27},20);
+  if(i%5==0)title(g,juce::String(-2*i),{830,(int)y-14,63,27},22);
  }
  title(g,"1k",{76,529,43,24},15);
  title(g,"20k",{244,529,47,24},15);
@@ -262,30 +305,34 @@ void SkellyDeEsserAudioProcessorEditor::paint(juce::Graphics&g){
   g.setColour(active ? (seg<12 ? Theme::neon : juce::Colour::fromRGB(191,255,54)) : Theme::dim.withAlpha(.52f));
   g.fillRoundedRectangle(rect,2.f);
  }
+ // Readouts stay on separate unobstructed lines near the bottom of the stage.
  g.setColour(Theme::label);
- g.setFont(Theme::font(18));
- g.drawText("SC LEVEL  " + juce::String(sideDb,1) + " dBFS",
-            910,800,264,35,juce::Justification::centredLeft);
+ g.setFont(Theme::font(21,true));
+ g.drawFittedText("SC  " + juce::String(sideDb,1) + " dBFS",
+                  {917,792,220,43},juce::Justification::centredRight,1);
+ Theme::line(g,1158,799,1158,830,.35f);
  g.setColour(reduction>.05f?Theme::bright:Theme::label);
- g.drawText("GAIN REDUCTION  " + juce::String(reduction,1) + " dB",
-            1182,800,256,35,juce::Justification::centredRight);
+ g.drawFittedText("GR  " + juce::String(reduction,1) + " dB",
+                  {1191,792,241,43},juce::Justification::centredLeft,1);
 }
 
 void SkellyDeEsserAudioProcessorEditor::resized(){
  const auto sx=getWidth()/1536.f,sy=getHeight()/1024.f;
  auto place=[sx,sy](juce::Component&c,int x,int y,int w,int h){c.setBounds(juce::roundToInt(x*sx),juce::roundToInt(y*sy),juce::roundToInt(w*sx),juce::roundToInt(h*sy));};
- place(detectHeader,76,214,209,41);place(split,91,266,178,43);place(wide,91,313,178,43);
- place(frequencyHeader,76,368,209,42);place(frequency,104,424,150,130);
+ place(detectHeader,76,211,209,41);
+ place(split,91,259,178,32);place(wide,91,294,178,32);place(phraseButton,91,329,178,32);
+ place(frequencyHeader,76,372,209,39);place(frequency,104,424,150,130);
  place(frequencyValue,100,558,158,39);place(sideHeader,76,613,209,39);
  place(hpf,89,667,89,50);place(filter,182,667,90,50);
  place(monitorHeader,76,734,209,39);place(audio,76,791,101,54);place(sidechain,183,791,100,54);
  place(waveform,397,316,1064,418);waveform.toBack();
  place(threshold,710,304,116,464);place(thresholdValue,684,783,168,49);
- place(prev,1041,128,47,54);place(preset,1094,128,273,54);
- place(next,1336,130,34,50);place(save,1380,128,53,54);place(settings,1444,128,54,54);
- const auto textPx=juce::jmax(12.f,20.f*sy);
+ // No overlap: V6's NEXT control occupied the same rectangle as the preset.
+ place(prev,1016,128,46,54);place(preset,1066,128,289,54);
+ place(next,1359,128,42,54);place(save,1406,128,46,54);place(settings,1457,128,46,54);
+ const auto textPx=juce::jmax(10.f,24.f*sy);
  frequencyValue.setFont(Theme::font(textPx,true));
- thresholdValue.setFont(Theme::font(juce::jmax(14.f,25.f*sy),true));
+ thresholdValue.setFont(Theme::font(juce::jmax(11.f,28.f*sy),true));
  processor.apvts.state.setProperty("editorWidth",getWidth(),nullptr);
  processor.apvts.state.setProperty("editorHeight",getHeight(),nullptr);
 }

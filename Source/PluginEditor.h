@@ -22,12 +22,12 @@ private:
  SkullKnob frequency;
  ThresholdFader threshold;
  ReadoutBox frequencyValue,thresholdValue;
- TwoStateButton split{"Split"},wide{"Wide"},audio{"Audio"},sidechain{"S Chain"};
+ TwoStateButton split{"Split"},wide{"Wide"},phraseButton{"Phrase"},audio{"Audio"},sidechain{"S Chain"};
  IconButton hpf{"HPF"},filter{"FILTER"};
  IconButton prev{"PREV"},next{"NEXT"},save{"SAVE"},settings{"MENU"},preset{"A: My Default Preset"};
  SectionHeader detectHeader{"DETECTION"},frequencyHeader{"FREQUENCY"},sideHeader{"SIDECHAIN"},monitorHeader{"MONITOR"};
  WaveformBackdrop waveform;
- juce::Image artFrame,artSkull,stageArt,leftArt,faderArt,capArt,knobArt,staticBackdrop;
+ juce::Image artFrame,stageArt,leftArt,faderArt,capArt,knobArt,staticBackdrop;
  juce::ComponentBoundsConstrainer aspect;
  std::unique_ptr<juce::FileChooser> presetChooser;
  std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> frequencyAttach,thresholdAttach;

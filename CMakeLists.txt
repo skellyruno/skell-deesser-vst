@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(SkellyDeEsser VERSION 1.6.0 LANGUAGES C CXX)
+project(SkellyDeEsser VERSION 1.8.0 LANGUAGES C CXX)
 include(FetchContent)
 if(DEFINED JUCE_PATH AND EXISTS "${JUCE_PATH}/CMakeLists.txt")
   add_subdirectory("${JUCE_PATH}" JUCE)
@@ -18,7 +18,7 @@ juce_add_binary_data(SkellyArt SOURCES
 target_sources(SkellyDeEsser PRIVATE
  Source/PluginProcessor.cpp Source/PluginProcessor.h Source/PluginEditor.cpp Source/PluginEditor.h
  Source/ui/Theme.h Source/ui/LookAndFeel.h Source/ui/Controls.h
- Source/dsp/WaveformHistory.h Source/dsp/EnvelopeFollower.h Source/dsp/SidechainFilter.h Source/dsp/ComplementaryBand.h Source/dsp/DeEsserEngine.h)
+ Source/dsp/WaveformHistory.h Source/dsp/EnvelopeFollower.h Source/dsp/SidechainFilter.h Source/dsp/ComplementaryBand.h Source/dsp/PhraseAwareDetector.h Source/dsp/DeEsserEngine.h)
 target_compile_features(SkellyDeEsser PRIVATE cxx_std_17)
 target_compile_definitions(SkellyDeEsser PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)
 target_link_libraries(SkellyDeEsser PRIVATE SkellyArt juce::juce_audio_utils juce::juce_audio_processors juce::juce_gui_extra)
