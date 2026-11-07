@@ -63,3 +63,11 @@ UI fixes: scaled section header fonts and ornaments; fixed overlapping NEXT/pres
 ## V8 Phrase-Aware development notes
 
 See [V8_PHRASE_AWARE_NOTES.md](V8_PHRASE_AWARE_NOTES.md) for algorithm, controls, known trade-offs, and measured synthetic results. Default editor remains 633 × 422 (45% smaller in each dimension than the original 1152 × 768). No new image assets were added.
+
+
+## V9 reliability updates
+
+- Smoothed crossfades between Split, Wide, and Phrase use convex weighting during simultaneous host automation.
+- Phrase event gate hysteresis avoids overcounting wavering sibilants when learning a phrase; the existing UI now shows whether the phrase is still learning or has a baseline.
+- GitHub Actions now packages Standalone separately from VST3 and runs GCC, Clang, UBSan, and UI geometry checks.
+- See [V9_ENGINEERING_NOTES.md](V9_ENGINEERING_NOTES.md) for test scope and limitations.

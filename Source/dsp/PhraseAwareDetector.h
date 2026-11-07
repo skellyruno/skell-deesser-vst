@@ -67,8 +67,16 @@ public:
    gapReset = false;
   }
 
-  const bool candidate = voicePresent && sibilanceEnvelope > sibilantFloor
-                      && sibilanceEnvelope > voiceEnvelope * relativeGate;
+  // Hysteresis prevents one breathy /s/ wavering near the gate from being
+  // registered as several independent sibilants. Once active, tolerate a
+  // slightly lower envelope until the normal 26 ms end-of-event hold elapses.
+  // The initial trigger remains identical to V8 for preset compatibility.
+  const bool newEventGate = voicePresent && sibilanceEnvelope > sibilantFloor
+                         && sibilanceEnvelope > voiceEnvelope * relativeGate;
+  const bool continuationGate = voicePresent && eventActive
+       && sibilanceEnvelope > sibilantFloor * 0.75
+       && sibilanceEnvelope > voiceEnvelope * (relativeGate * 0.70);
+  const bool candidate = newEventGate || continuationGate;
   if (candidate) {
    if (!eventActive) {
     eventActive = true;

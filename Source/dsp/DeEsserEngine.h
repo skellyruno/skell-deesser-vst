@@ -121,8 +121,11 @@ public:
     const double wide=input[c]*gain;
     const double phraseGain=std::pow(10.0,-phraseReduction[(size_t)c]/20.0);
     const double phraseSplit=input[c]+(phraseGain-1.0)*sibilance;
-    const double processed=split+(wide-split)*wideBlend
-                                +(phraseSplit-split)*phraseBlend;
+    // Two independent smoothed controls may transition simultaneously (e.g.
+    // host automates Split->Wide while enabling Phrase). Use a convex mix so
+    // the weights can never sum above unity or invert the Split contribution.
+    const double conventional=split+(wide-split)*wideBlend;
+    const double processed=conventional*(1.0-phraseBlend)+phraseSplit*phraseBlend;
     buffer.setSample(c,i,(float)((processed+(det[c]-processed)*listenBlend)*output));
    }
   }

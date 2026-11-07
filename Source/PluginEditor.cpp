@@ -305,6 +305,19 @@ void SkellyDeEsserAudioProcessorEditor::paint(juce::Graphics&g){
   g.setColour(active ? (seg<12 ? Theme::neon : juce::Colour::fromRGB(191,255,54)) : Theme::dim.withAlpha(.52f));
   g.fillRoundedRectangle(rect,2.f);
  }
+ // A compact, actual detector-state readout (never a simulated waveform
+ // or an invented "AI" confidence value). Only visible in Phrase mode.
+ if (processor.apvts.getRawParameterValue("phraseAware")->load(std::memory_order_relaxed) > .5f) {
+  const auto events=processor.engine.phraseLearnedEvents.load(std::memory_order_relaxed);
+  const auto baseline=processor.engine.phraseBaselineDb.load(std::memory_order_relaxed);
+  juce::String msg="PHRASE  |  LEARNING";
+  if (events>0)
+   msg="PHRASE  |  NORMAL " + juce::String(baseline,1) + " dBFS  |  "
+       + juce::String(events) + " EVENTS";
+  g.setColour(Theme::bright.withAlpha(.78f));
+  g.setFont(Theme::font(19,true));
+  g.drawFittedText(msg,{947,737,488,31},juce::Justification::centredRight,1);
+ }
  // Readouts stay on separate unobstructed lines near the bottom of the stage.
  g.setColour(Theme::label);
  g.setFont(Theme::font(21,true));

@@ -19,6 +19,18 @@ jobs:
         with:
           name: SkellyDeEsser-Windows-VST3
           path: SkellyDeEsser-Windows-VST3.zip
+      - name: Verify and package Standalone
+        shell: pwsh
+        run: |
+          $standalone = Get-ChildItem build -File -Recurse -Filter '*.exe' |
+            Where-Object { $_.FullName -like '*Standalone*' -and $_.Name -like '*Skelly*' } |
+            Select-Object -First 1
+          if (!$standalone) { throw 'Standalone executable missing' }
+          Compress-Archive -Path $standalone.FullName -DestinationPath SkellyDeEsser-Windows-Standalone.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SkellyDeEsser-Windows-Standalone
+          path: SkellyDeEsser-Windows-Standalone.zip
 
   dsp-regression:
     runs-on: ubuntu-latest
@@ -28,7 +40,17 @@ jobs:
         shell: bash
         run: |
           CXX=g++ bash tests/run_smoke.sh
-          for test in filter_smoke waveform_smoke engine_smoke band_regression engine_regression phrase_aware_regression; do
+          for test in filter_smoke waveform_smoke engine_smoke band_regression engine_regression phrase_aware_regression phrase_gate_regression; do
             g++ -std=c++17 -O1 -g -fsanitize=undefined -fno-sanitize-recover=all -Itests/juce_stub "tests/${test}.cpp" -o "/tmp/skelly_ubsan_${test}"
             "/tmp/skelly_ubsan_${test}"
           done
+
+  clang-and-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Clang DSP regressions
+        shell: bash
+        run: CXX=clang++ bash tests/run_smoke.sh
+      - name: Compact UI geometry checks
+        run: python3 tests/ui_layout_check.py
