@@ -14,6 +14,9 @@ assert 'getHeight()*.53f' in controls
 assert 'getHeight()*.14f' in controls
 assert 'phraseButton.setToggleState(phraseOn' in editor
 assert 'phraseAware' in processor and 'phraseSensitivity' in processor
+assert 'title(g,"THRESHOLD"' in editor
+assert 'g.drawFittedText("SC LEVEL"' in editor
+assert 'if(!std::isfinite(v))return;' in editor
 assert '"SAVE"' in look and 'const float side=juce::jmin(b.getWidth(),b.getHeight())*.60f' in look
 # Source declares each component's base coordinates in resized().
 placements = {}
@@ -35,7 +38,7 @@ for a,b in [('detectHeader','split'),('split','wide'),('wide','phraseButton'),('
     # hpf sits alongside filter, and headings are stacked below in Y.
     ax,ay,aw,ah=placements[a]; bx,by,bw,bh=placements[b]
     assert ay+ah<=by, f'{a} overlaps {b}'
-for width,height in [(633,422),(806,537),(979,653),(1152,768)]:
+for width,height in [(540,360),(633,422),(806,537),(979,653),(1152,768),(1536,1024)]:
     assert abs(width/height-1.5)<.005
     for name,(x,y,w,h) in placements.items():
         scaled=(round(x*width/1536),round(y*height/1024),round(w*width/1536),round(h*height/1024))

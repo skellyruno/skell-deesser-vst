@@ -40,7 +40,7 @@ jobs:
         shell: bash
         run: |
           CXX=g++ bash tests/run_smoke.sh
-          for test in filter_smoke waveform_smoke engine_smoke band_regression engine_regression phrase_aware_regression phrase_gate_regression filter_automation_regression; do
+          for test in filter_smoke waveform_smoke engine_smoke band_regression engine_regression phrase_aware_regression phrase_gate_regression filter_automation_regression extreme_stress realtime_alloc_stress; do
             g++ -std=c++17 -O1 -g -fsanitize=undefined -fno-sanitize-recover=all -Itests/juce_stub "tests/${test}.cpp" -o "/tmp/skelly_ubsan_${test}"
             "/tmp/skelly_ubsan_${test}"
           done
@@ -52,5 +52,10 @@ jobs:
       - name: Clang DSP regressions
         shell: bash
         run: CXX=clang++ bash tests/run_smoke.sh
+      - name: Extreme stress under ASan and UBSan
+        shell: bash
+        run: |
+          clang++ -std=c++17 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all -Itests/juce_stub tests/extreme_stress.cpp -o /tmp/skelly_extreme_asan
+          ASAN_OPTIONS=detect_leaks=1 /tmp/skelly_extreme_asan
       - name: Compact UI geometry checks
         run: python3 tests/ui_layout_check.py

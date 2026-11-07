@@ -79,7 +79,7 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  };
  split.onClick=[this]{setFloat("phraseAware",0.f);setChoice("detectMode",0);};
  wide.onClick=[this]{setFloat("phraseAware",0.f);setChoice("detectMode",1);};
- phraseButton.onClick=[this]{setChoice("detectMode",0);setFloat("phraseAware",1.f);updateButtons();};
+ phraseButton.onClick=[this]{setChoice("detectMode",0);setFloat("phraseAware",1.f);updateButtons();repaint();};
  phraseButton.setTooltip("Phrase-Aware: learn a singer's normal sibilance per phrase; reduce outliers.");
  frequency.setTooltip("Detector centre frequency: drag knob, scroll, or edit Hz below.");
  threshold.setTooltip("Threshold: drag the skull. Double-click restores -24 dB.");
@@ -133,6 +133,7 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
 }
 SkellyDeEsserAudioProcessorEditor::~SkellyDeEsserAudioProcessorEditor(){setLookAndFeel(nullptr);}
 void SkellyDeEsserAudioProcessorEditor::setFloat(const char* id,float v){
+ if(!std::isfinite(v))return;
  if(auto*p=processor.apvts.getParameter(id)){
   auto*r=dynamic_cast<juce::RangedAudioParameter*>(p);
   if(r){
@@ -141,7 +142,9 @@ void SkellyDeEsserAudioProcessorEditor::setFloat(const char* id,float v){
    r->beginChangeGesture();r->setValueNotifyingHost(r->convertTo0to1(v));r->endChangeGesture();
   }}
 }
-void SkellyDeEsserAudioProcessorEditor::setChoice(const char*id,int n){setFloat(id,(float)n);updateButtons();}
+void SkellyDeEsserAudioProcessorEditor::setChoice(const char*id,int n){
+ setFloat(id,(float)n);updateButtons();repaint();
+}
 void SkellyDeEsserAudioProcessorEditor::updateButtons(){
  auto get=[this](const char*id){return processor.apvts.getRawParameterValue(id)->load();};
  const bool phraseOn=get("phraseAware")>.5f;
@@ -238,7 +241,7 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
  sizes.addItem(203,"Large (85%)",true,getWidth()==979);
  sizes.addItem(204,"Original (100%)",true,getWidth()==1152);
  m.addSubMenu("Window size",sizes);
- m.addItem(9,"About Skelly DeEsser V10");
+ m.addItem(9,"About Skelly DeEsser V11");
  const auto safe=juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
  m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&settings),[safe](int r){
   if(!safe)return;
@@ -252,7 +255,7 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
    return;
   }
   if(r==9){
-   juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,"Skelly DeEsser V10",
+   juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,"Skelly DeEsser V11",
     "Gothic stereo de-esser. Split, Wide and Phrase-Aware, zero reported latency, and host automation.");
    return;
   }
@@ -299,7 +302,11 @@ void SkellyDeEsserAudioProcessorEditor::paint(juce::Graphics&g){
  g.setFont(Theme::font(64,true,true));
  g.drawText("SKELLY",83,61,306,89,juce::Justification::centredLeft);
  title(g,"DeEsser",{134,145,190,30},24);
- title(g,"THRESHOLD",{676,245,191,42},26);
+ title(g,"THRESHOLD",{676,245,191,42},28);
+ // This rail is sidechain level; the separate LED strip is gain reduction.
+ g.setColour(Theme::label.withAlpha(.8f));
+ g.setFont(Theme::font(23,true));
+ g.drawFittedText("SC LEVEL",{900,289,148,27},juce::Justification::centred,1);
  Theme::line(g,576,267,678,267,.65f);
  Theme::line(g,866,267,965,267,.65f);
 
@@ -348,12 +355,12 @@ void SkellyDeEsserAudioProcessorEditor::paint(juce::Graphics&g){
    msg="PHRASE  |  NORMAL " + juce::String(baseline,1) + " dBFS  |  "
        + juce::String(events) + " EVENTS";
   g.setColour(Theme::bright.withAlpha(.78f));
-  g.setFont(Theme::font(19,true));
-  g.drawFittedText(msg,{947,737,488,31},juce::Justification::centredRight,1);
+  g.setFont(Theme::font(25,true));
+  g.drawFittedText(msg,{932,729,506,38},juce::Justification::centredRight,1);
  }
  // Readouts stay on separate unobstructed lines near the bottom of the stage.
  g.setColour(Theme::label);
- g.setFont(Theme::font(21,true));
+ g.setFont(Theme::font(24,true));
  g.drawFittedText("SC  " + juce::String(sideDb,1) + " dBFS",
                   {917,792,220,43},juce::Justification::centredRight,1);
  Theme::line(g,1158,799,1158,830,.35f);

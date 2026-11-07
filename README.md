@@ -1,8 +1,8 @@
-# Skelly DeEsser V8 — Phrase-Aware / Compact UI / VST3 / Standalone
+# Skelly DeEsser V11 — Phrase-Aware / Compact UI / VST3 / Standalone
 
 Skelly DeEsser is a stereo de-esser with a dark neon-green gothic user interface, selectable split-band/wideband compression, frequency-targeted sidechain, A/B snapshots, peak waveform, threshold meter, and JUCE automation.
 
-**Status:** JUCE source project. Standalone DSP and phrase-behavior tests are included, but **a full JUCE/MSVC build, pluginval run, and FL Studio listening/restore test have not been run here.** Treat V8 as a development build, not a validated commercial release.
+**Status:** JUCE source project. V10 passed the Windows VST3 and Standalone GitHub Actions build (run 42403563523); the new V11 changes require a fresh CI run. DSP regression/stress tests pass locally with GCC and Clang, including ASan/UBSan on the isolated engine. **Pluginval and FL Studio lifecycle, listening and project-restore tests remain pending.** Treat V11 as a development build, not a validated commercial release.
 
 ## Build
 
@@ -75,3 +75,8 @@ See [V10_ENGINEERING_NOTES.md](V10_ENGINEERING_NOTES.md): lower realtime CPU loa
 - Phrase event gate hysteresis avoids overcounting wavering sibilants when learning a phrase; the existing UI now shows whether the phrase is still learning or has a baseline.
 - GitHub Actions now packages Standalone separately from VST3 and runs GCC, Clang, UBSan, and UI geometry checks.
 - See [V9_ENGINEERING_NOTES.md](V9_ENGINEERING_NOTES.md) for test scope and limitations.
+
+
+## V11 stress and pre-release gate
+
+The source tree now has a deterministic hostile-host stress test (11 sample rates, 0–8192 sample blocks, corrupt samples/parameters, mono/stereo, mode switching) and a DSP allocation test. Run with `bash tests/run_smoke.sh`; CI also runs AddressSanitizer and UndefinedBehaviorSanitizer. See [RELEASE_READINESS.md](RELEASE_READINESS.md) for the outstanding release gates and [V11_ENGINEERING_NOTES.md](V11_ENGINEERING_NOTES.md) for what was and was not verified.
