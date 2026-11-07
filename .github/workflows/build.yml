@@ -40,7 +40,7 @@ jobs:
         shell: bash
         run: |
           CXX=g++ bash tests/run_smoke.sh
-          for test in filter_smoke waveform_smoke engine_smoke band_regression engine_regression phrase_aware_regression phrase_gate_regression; do
+          for test in filter_smoke waveform_smoke engine_smoke band_regression engine_regression phrase_aware_regression phrase_gate_regression filter_automation_regression; do
             g++ -std=c++17 -O1 -g -fsanitize=undefined -fno-sanitize-recover=all -Itests/juce_stub "tests/${test}.cpp" -o "/tmp/skelly_ubsan_${test}"
             "/tmp/skelly_ubsan_${test}"
           done

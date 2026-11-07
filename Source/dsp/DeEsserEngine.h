@@ -31,6 +31,12 @@ public:
   phraseRelease = std::exp(-1.0 / (rate * .026));
   outputSmooth.reset(rate,.015);
   thresholdSmooth.reset(rate,.010);
+  // Host automation can jump from a mild de-ess setting to a full 24 dB
+  // reduction between audio blocks. Interpolate the parameters instead of
+  // creating a gain discontinuity at each block boundary.
+  ratioSmooth.reset(rate,.012);
+  rangeSmooth.reset(rate,.012);
+  linkSmooth.reset(rate,.010);
   modeSmooth.reset(rate,.008);
   phraseModeSmooth.reset(rate,.008);
   monitorSmooth.reset(rate,.008);
@@ -46,11 +52,18 @@ public:
   sidechainLevelDb.store(-60);gainReductionDb.store(0);inputPeak.store(0);
   outputSmooth.setCurrentAndTargetValue(1.0);
   thresholdSmooth.setCurrentAndTargetValue(-24.0);
+  ratioSmooth.setCurrentAndTargetValue(4.0);
+  rangeSmooth.setCurrentAndTargetValue(12.0);
+  linkSmooth.setCurrentAndTargetValue(1.0);
   modeSmooth.setCurrentAndTargetValue(0.0);
   phraseModeSmooth.setCurrentAndTargetValue(0.0);
   monitorSmooth.setCurrentAndTargetValue(0.0);
   currentFreq=5860.0;
   filterCounter=0;
+  lastConfiguredFreq=-1.0;
+  lastFilterType=-1;
+  lastHpf=false;
+  filterReconfigurations=0;
   meterSideDb=-60.0;
   meterGr=0.0;
  }
@@ -61,24 +74,38 @@ public:
   for(auto& f:envelopes)f.update(s.attack,s.release);
   outputSmooth.setTargetValue(juce::Decibels::decibelsToGain(s.output));
   thresholdSmooth.setTargetValue(s.threshold);
+  ratioSmooth.setTargetValue(std::clamp((double)s.ratio,1.0,20.0));
+  rangeSmooth.setTargetValue(std::clamp((double)s.range,0.0,24.0));
+  linkSmooth.setTargetValue(std::clamp(s.link*.01,0.0,1.0));
   modeSmooth.setTargetValue(s.mode==1?1.0:0.0);
   phraseModeSmooth.setTargetValue(s.mode==2?1.0:0.0);
   monitorSmooth.setTargetValue(s.monitor==1?1.0:0.0);
-  const double link=std::clamp(s.link*.01,0.0,1.0);
   const double targetFreq=std::clamp((double)s.frequency,70.0,rate*.30);
   const double freqAlpha=1.0-std::exp(-1.0/(rate*.020));
   double maxEnv=0.0,maxReduction=0.0,peak=0.0;
   float lastPhraseBaseline=-60.f;int lastPhraseEvents=0;
   for(int i=0;i<n;++i) {
    currentFreq += (targetFreq-currentFreq)*freqAlpha;
-   // Update coefficient targets at a bounded 16-sample cadence. The frequency
-   // itself is smoothed sample-by-sample (20 ms); no allocation in audio thread.
-   if ((filterCounter++ & 15u)==0u) {
+   // At a maximum 16-sample cadence, only calculate trig-heavy biquad
+   // coefficients when the requested setting actually changed. Static
+   // parameters used to recompute eight biquads thousands of times/second.
+   // The 0.02% cutoff tolerance is below perceptual tuning resolution and
+   // bounds coefficient work during 20 ms frequency sweeps.
+   if ((filterCounter++ & 15u)==0u &&
+       (lastFilterType!=s.filterType || lastHpf!=s.hpf ||
+        std::abs(currentFreq-lastConfiguredFreq)>std::max(.20,currentFreq*.0002))) {
     for(auto& f:detectors)f.configure(currentFreq,s.filterType,s.hpf);
     for(auto& b:band)b.setFrequency(currentFreq);
+    lastConfiguredFreq=currentFreq;
+    lastFilterType=s.filterType;
+    lastHpf=s.hpf;
+    ++filterReconfigurations;
    }
    const double output=outputSmooth.getNextValue();
    const double currentThreshold=thresholdSmooth.getNextValue();
+   const double ratio=ratioSmooth.getNextValue();
+   const double range=rangeSmooth.getNextValue();
+   const double link=linkSmooth.getNextValue();
    const double wideBlend=modeSmooth.getNextValue();
    const double phraseBlend=phraseModeSmooth.getNextValue();
    const double listenBlend=monitorSmooth.getNextValue();
@@ -102,11 +129,11 @@ public:
     const double detectorEnv=(1.0-link)*env[c]+link*shared;
     const double db=20.0*std::log10(std::max(detectorEnv,1.e-8));
     maxEnv=std::max(maxEnv,detectorEnv);
-    const double reduction=computeReduction(db,currentThreshold,s.ratio,s.range);
+    const double reduction=computeReduction(db,currentThreshold,ratio,range);
     // Phrase-Aware uses the previous sibilant events within this phrase as
     // its reference; first event is learned, not automatically attenuated.
     const double targetPhraseReduction=phraseDecision.eligible
-      ? computeReduction(db,phraseDecision.thresholdDb,s.ratio,s.range) : 0.0;
+      ? computeReduction(db,phraseDecision.thresholdDb,ratio,range) : 0.0;
     const double smoothing=targetPhraseReduction>phraseReduction[(size_t)c]
       ? phraseAttack : phraseRelease;
     phraseReduction[(size_t)c]=smoothing*phraseReduction[(size_t)c]
@@ -145,6 +172,9 @@ public:
   phraseBaselineDb.store((float)lastPhraseBaseline,std::memory_order_relaxed);
   phraseLearnedEvents.store(lastPhraseEvents,std::memory_order_relaxed);
  }
+ // Inspection-only counter used by DSP regression tests; never read it
+ // concurrently with process() on the realtime thread.
+ unsigned getFilterReconfigurationCount() const noexcept { return filterReconfigurations; }
  static double computeReduction(double db,double threshold,double ratio,double range) noexcept {
   constexpr double knee=6.0;
   const double slope=1.0-1.0/std::max(1.0,ratio);
@@ -162,12 +192,16 @@ private:
   return channels==2?std::max(std::abs(samples[0]),std::abs(samples[1])):std::abs(samples[0]);
  }
  double rate=48000.0,currentFreq=5860.0,meterSideDb=-60.0,meterGr=0.0;
- unsigned filterCounter=0;
+ unsigned filterCounter=0,filterReconfigurations=0;
+ double lastConfiguredFreq=-1.0;
+ int lastFilterType=-1;
+ bool lastHpf=false;
  std::array<SidechainFilter,2> detectors;
  std::array<EnvelopeFollower,2> envelopes;
  std::array<ComplementaryBand,2> band;
  PhraseAwareDetector phrase;
  std::array<double,2> phraseReduction{{0.0,0.0}};
  double phraseAttack=0.99,phraseRelease=0.999;
- juce::SmoothedValue<double,juce::ValueSmoothingTypes::Linear> outputSmooth,thresholdSmooth,modeSmooth,phraseModeSmooth,monitorSmooth;
+ juce::SmoothedValue<double,juce::ValueSmoothingTypes::Linear> outputSmooth,thresholdSmooth,ratioSmooth,rangeSmooth,linkSmooth,
+  modeSmooth,phraseModeSmooth,monitorSmooth;
 };

@@ -20,7 +20,7 @@ public:
    g.setGradientFill(selected);
    g.fillRoundedRectangle(r.reduced(2),4);
    g.setColour(Theme::bright);
-   g.drawRoundedRectangle(r.reduced(2),4,1.3f);
+   g.drawRoundedRectangle(r.reduced(2),juce::jmax(2.f,b.getHeight()*.10f),1.1f);
   }else if(hover){
    g.setColour(Theme::neon.withAlpha(.10f));g.fillRoundedRectangle(r.reduced(2),4);
   }

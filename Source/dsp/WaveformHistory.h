@@ -25,6 +25,7 @@ public:
    maximum = 0.f; count = 0;
   }
  }
+ uint64_t serial() const noexcept { return writePosition.load(std::memory_order_acquire); }
  void copy(float* destination, unsigned size) const noexcept {
   const auto end = writePosition.load(std::memory_order_acquire);
   const auto n = std::min(size, length);

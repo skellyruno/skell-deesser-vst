@@ -65,6 +65,10 @@ UI fixes: scaled section header fonts and ornaments; fixed overlapping NEXT/pres
 See [V8_PHRASE_AWARE_NOTES.md](V8_PHRASE_AWARE_NOTES.md) for algorithm, controls, known trade-offs, and measured synthetic results. Default editor remains 633 × 422 (45% smaller in each dimension than the original 1152 × 768). No new image assets were added.
 
 
+## V10 DSP and UI improvements
+
+See [V10_ENGINEERING_NOTES.md](V10_ENGINEERING_NOTES.md): lower realtime CPU load during static settings, smoothed ratio/range/stereo link automation, and more readable compact UI controls.
+
 ## V9 reliability updates
 
 - Smoothed crossfades between Split, Wide, and Phrase use convex weighting during simultaneous host automation.

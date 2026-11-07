@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include <cstdint>
 #include "PluginProcessor.h"
 #include "ui/Controls.h"
 #include "ui/LookAndFeel.h"
@@ -29,6 +30,11 @@ private:
  WaveformBackdrop waveform;
  juce::Image artFrame,stageArt,leftArt,faderArt,capArt,knobArt,staticBackdrop;
  juce::ComponentBoundsConstrainer aspect;
+ // UI-only paint revision cache. No locks or audio-thread access to GUI.
+ uint64_t lastWaveSerial=UINT64_MAX;
+ float lastSideDb=999.f,lastGrDb=999.f,lastPhraseDb=999.f;
+ int lastLearnedEvents=-1;
+ bool lastPhraseOn=false;
  std::unique_ptr<juce::FileChooser> presetChooser;
  std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> frequencyAttach,thresholdAttach;
  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SkellyDeEsserAudioProcessorEditor)

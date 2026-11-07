@@ -25,23 +25,23 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
   // framed sidebar and a second emblem were competing with the real controls.
   {
    juce::Graphics::ScopedSaveState save(art);
-   art.setOpacity(0.68f);
+   art.setOpacity(0.46f);
    draw(art,stageArt,352,213,1137,650);
   }
-  art.setColour(Theme::black.withAlpha(0.48f));
+  art.setColour(Theme::black.withAlpha(0.67f));
   art.fillRoundedRectangle(369.f,224.f,1096.f,615.f,12.f);
   {
    juce::Graphics::ScopedSaveState save(art);
-   art.setOpacity(0.63f);
+   art.setOpacity(0.49f);
    draw(art,leftArt,51,198,254,659);
   }
-  art.setColour(Theme::black.withAlpha(0.62f));
+  art.setColour(Theme::black.withAlpha(0.69f));
   art.fillRoundedRectangle(66.f,211.f,218.f,634.f,7.f);
   // One emblem only. The frame PNG already contains the center skull.
   // An additional large skull was causing double edges and visual clutter.
   {
    juce::Graphics::ScopedSaveState save(art);
-   art.setOpacity(.84f);  // Reduce chrome bloom without discarding the original asset.
+   art.setOpacity(.65f);  // Let readable controls lead; original metal remains visible.
    draw(art,artFrame,0,0,1536,1024);
   }
  }
@@ -57,12 +57,38 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  threshold.setRange(-60,0,.1);
  frequencyAttach=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(p.apvts,"frequency",frequency);
  thresholdAttach=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(p.apvts,"threshold",threshold);
- frequencyValue.onTextChange=[this]{auto v=frequencyValue.getText().getFloatValue();if(v>0)setFloat("frequency",v);};
- thresholdValue.onTextChange=[this]{setFloat("threshold",thresholdValue.getText().getFloatValue());};
+ frequencyValue.onTextChange=[this]{
+  auto t=frequencyValue.getText().trim().toLowerCase().removeCharacters(" ");
+  if(t.endsWith("hz"))t=t.dropLastCharacters(2);
+  const bool khz=t.endsWithChar('k');
+  if(khz)t=t.dropLastCharacters(1);
+  if(t.isNotEmpty() && t.containsOnly("0123456789.")) {
+   const auto value=t.getDoubleValue()*(khz?1000.0:1.0);
+   if(std::isfinite(value)&&value>=1000.0&&value<=20000.0)
+    setFloat("frequency",(float)value);
+  }
+ };
+ thresholdValue.onTextChange=[this]{
+  auto t=thresholdValue.getText().trim().toLowerCase().removeCharacters(" ");
+  if(t.endsWith("db"))t=t.dropLastCharacters(2);
+  if(t.isNotEmpty() && t.containsOnly("-0123456789.")){
+   const double value=t.getDoubleValue();
+   if(std::isfinite(value)&&value>=-60.0&&value<=0.0)
+    setFloat("threshold",(float)value);
+  }
+ };
  split.onClick=[this]{setFloat("phraseAware",0.f);setChoice("detectMode",0);};
  wide.onClick=[this]{setFloat("phraseAware",0.f);setChoice("detectMode",1);};
  phraseButton.onClick=[this]{setChoice("detectMode",0);setFloat("phraseAware",1.f);updateButtons();};
- phraseButton.setTooltip("Phrase-Aware: learn each vocal phrase and reduce unusually strong sibilants only.");
+ phraseButton.setTooltip("Phrase-Aware: learn a singer's normal sibilance per phrase; reduce outliers.");
+ frequency.setTooltip("Detector centre frequency: drag knob, scroll, or edit Hz below.");
+ threshold.setTooltip("Threshold: drag the skull. Double-click restores -24 dB.");
+ frequencyValue.setTooltip("Enter 5860, 5.86k, or 5860 Hz and press Enter.");
+ thresholdValue.setTooltip("Enter a value from -60 to 0 dB.");
+ split.setTooltip("Split: reduce only the sibilance band; preserve low-frequency body.");
+ wide.setTooltip("Wide: reduce the entire vocal when sibilance exceeds threshold.");
+ audio.setTooltip("Listen to processed audio.");
+ sidechain.setTooltip("Listen to the detector signal to fine-tune frequency.");
  audio.onClick=[this]{setChoice("monitorMode",0);};sidechain.onClick=[this]{setChoice("monitorMode",1);};
  hpf.onClick=[this]{auto*v=processor.apvts.getRawParameterValue("sidechainHpf");setFloat("sidechainHpf",v->load()>.5f?0.f:1.f);};
  filter.onClick=[this]{juce::PopupMenu m;juce::StringArray names{"Off","HPF 6 dB","HPF 12 dB","Band-Pass","Listen Filter"};
@@ -103,7 +129,7 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  p.apvts.state.setProperty("compactLayoutV7",true,nullptr);
  setSize(savedWidth,savedHeight);
 
- startTimerHz(30);
+ startTimerHz(24); // Lower idle repaint cost without reducing the audio processing rate.
 }
 SkellyDeEsserAudioProcessorEditor::~SkellyDeEsserAudioProcessorEditor(){setLookAndFeel(nullptr);}
 void SkellyDeEsserAudioProcessorEditor::setFloat(const char* id,float v){
@@ -125,8 +151,9 @@ void SkellyDeEsserAudioProcessorEditor::updateButtons(){
  audio.setToggleState(get("monitorMode")<.5f,juce::dontSendNotification);
  sidechain.setToggleState(get("monitorMode")>.5f,juce::dontSendNotification);
  hpf.setToggleState(get("sidechainHpf")>.5f,juce::dontSendNotification);
- preset.setButtonText(processor.apvts.state.getProperty("slot","A").toString()+": "+
-                      processor.apvts.state.getProperty("presetName","My Default Preset").toString());
+ const auto text=processor.apvts.state.getProperty("slot","A").toString()+": "+
+                      processor.apvts.state.getProperty("presetName","My Default Preset").toString();
+ if(preset.getButtonText()!=text)preset.setButtonText(text);
 }
 // Portable preset files wrap the same host-compatible state document that
 // already stores both A/B slots, the selected slot, and editor properties.
@@ -211,7 +238,7 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
  sizes.addItem(203,"Large (85%)",true,getWidth()==979);
  sizes.addItem(204,"Original (100%)",true,getWidth()==1152);
  m.addSubMenu("Window size",sizes);
- m.addItem(9,"About Skelly DeEsser V8");
+ m.addItem(9,"About Skelly DeEsser V10");
  const auto safe=juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
  m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&settings),[safe](int r){
   if(!safe)return;
@@ -225,7 +252,7 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
    return;
   }
   if(r==9){
-   juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,"Skelly DeEsser V8",
+   juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,"Skelly DeEsser V10",
     "Gothic stereo de-esser. Split, Wide and Phrase-Aware, zero reported latency, and host automation.");
    return;
   }
@@ -260,6 +287,11 @@ void SkellyDeEsserAudioProcessorEditor::paint(juce::Graphics&g){
  else g.fillAll(Theme::black);
 
  // All labels, meter graphics and user controls remain dynamic and sharp.
+ // Quiet recessed rails reinforce the layout without covering the waveform.
+ g.setColour(juce::Colour::fromRGB(5,18,9).withAlpha(.69f));
+ g.fillRoundedRectangle(891.f,779.f,556.f,58.f,9.f);
+ g.setColour(Theme::mid.withAlpha(.55f));
+ g.drawRoundedRectangle(891.f,779.f,556.f,58.f,9.f,1.25f);
  g.setColour(Theme::neon.withAlpha(.16f));
  g.setFont(Theme::font(66,true,true));
  g.drawText("SKELLY",79,66,306,89,juce::Justification::centredLeft);
@@ -298,6 +330,7 @@ void SkellyDeEsserAudioProcessorEditor::paint(juce::Graphics&g){
 
  const auto reduction=juce::jmax(0.f,processor.engine.gainReductionDb.load());
  // Separate 24 dB gain-reduction LED meter; the tall central meter is SC level.
+ // The separate meter prevents users confusing detector level and actual GR.
  constexpr float grX=1180.f,grY=773.f,grWidth=260.f;
  for(int seg=0;seg<24;++seg){
   const auto rect=juce::Rectangle<float>(grX+seg*(grWidth/24.f),grY,8.6f,14.f);
@@ -350,7 +383,27 @@ void SkellyDeEsserAudioProcessorEditor::resized(){
  processor.apvts.state.setProperty("editorHeight",getHeight(),nullptr);
 }
 void SkellyDeEsserAudioProcessorEditor::timerCallback(){
- updateButtons();if (!frequencyValue.isBeingEdited())frequencyValue.setText(juce::String((int)frequency.getValue())+" Hz",juce::dontSendNotification);
- if (!thresholdValue.isBeingEdited())thresholdValue.setText(juce::String(threshold.getValue(),1)+" dB",juce::dontSendNotification);
- waveform.advance();repaint();
+ updateButtons();
+ const auto frequencyText=juce::String((int)frequency.getValue())+" Hz";
+ const auto thresholdText=juce::String(threshold.getValue(),1)+" dB";
+ if(!frequencyValue.isBeingEdited() && frequencyValue.getText()!=frequencyText)
+  frequencyValue.setText(frequencyText,juce::dontSendNotification);
+ if(!thresholdValue.isBeingEdited() && thresholdValue.getText()!=thresholdText)
+  thresholdValue.setText(thresholdText,juce::dontSendNotification);
+ const auto serial=processor.engine.waveform.serial();
+ const float side=processor.engine.sidechainLevelDb.load(std::memory_order_relaxed);
+ const float gr=processor.engine.gainReductionDb.load(std::memory_order_relaxed);
+ const float phraseDb=processor.engine.phraseBaselineDb.load(std::memory_order_relaxed);
+ const int learned=processor.engine.phraseLearnedEvents.load(std::memory_order_relaxed);
+ const bool phraseOn=processor.apvts.getRawParameterValue("phraseAware")->load(std::memory_order_relaxed)>.5f;
+ const bool waveChanged=serial!=lastWaveSerial;
+ const bool meterChanged=std::abs(side-lastSideDb)>.05f || std::abs(gr-lastGrDb)>.05f;
+ const bool phraseChanged=phraseOn!=lastPhraseOn || learned!=lastLearnedEvents ||
+                          (phraseOn && std::abs(phraseDb-lastPhraseDb)>.05f);
+ if(waveChanged) { lastWaveSerial=serial; waveform.advance(); }
+ if(waveChanged||meterChanged||phraseChanged) {
+  lastSideDb=side;lastGrDb=gr;lastPhraseDb=phraseDb;
+  lastLearnedEvents=learned;lastPhraseOn=phraseOn;
+  repaint();
+ }
 }
