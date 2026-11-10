@@ -55,23 +55,54 @@ public:
   const float w=(float)getWidth(),mid=getHeight()*.5f;
   if(w<=0.f || mid<=0.f)return;
   const float scale=w/1064.f;
-  // Silence should not create a bright flat false waveform. Keep only a
-  // subtle baseline and real measured peaks around it.
-  g.setColour(Theme::mid.withAlpha(.13f));
+  // Preserve a faint zero baseline during silence; never draw a fake signal.
+  g.setColour(Theme::mid.withAlpha(.11f));
   g.drawLine(0.f,mid,w,mid,1.f);
-  // Leave an unobstructed gap for the threshold rail in the middle of the stage.
-  const float railCentre=371.f*scale,railHalf=92.f*scale;
-  for(unsigned i=0;i<values.size();++i){
-   const float x=w*(i+.5f)/values.size();
-   if(std::abs(x-railCentre)<railHalf)continue;
-   const float peak=juce::jlimit(0.f,1.f,values[i]);
-   if(peak<0.002f)continue;
-   const float amplitude=std::sqrt(peak)*mid*.53f;
-   g.setColour(Theme::mid.withAlpha(.10f));
-   g.drawLine(x,mid-amplitude,x,mid+amplitude,2.f);
-   g.setColour(Theme::bright.withAlpha(.24f));
-   g.drawLine(x,mid-amplitude*.8f,x,mid+amplitude*.8f,1.f);
+  // Temporal smoothing is VISUAL only: the actual detector and waveform
+  // history remain unchanged. Five-point weighted peaks remove harsh
+  // square bars without introducing audio-thread work or allocations.
+  std::array<float,WaveformHistory::length> heights{};
+  for(int i=0;i<(int)values.size();++i) {
+    auto peak=[&](int j)->float {
+      return juce::jlimit(0.f,1.f,values[(size_t)juce::jlimit(0,(int)values.size()-1,j)]);
+    };
+    const float smoothed=(peak(i-2)+2.f*peak(i-1)+3.f*peak(i)
+                         +2.f*peak(i+1)+peak(i+2))/9.f;
+    heights[(size_t)i]=std::sqrt(smoothed)*mid*.53f;
   }
+  // Two independent segments leave the threshold rail and skull fader clear.
+  const float railCentre=371.f*scale,railHalf=92.f*scale;
+  const int cutLeft=juce::jlimit(0,(int)values.size(),
+                 (int)std::floor((railCentre-railHalf)/w*values.size()));
+  const int cutRight=juce::jlimit(0,(int)values.size(),
+                  (int)std::ceil((railCentre+railHalf)/w*values.size()));
+  auto drawSegment=[&](int begin,int end) {
+    if(end-begin<2)return;
+    float maximum=0.f;
+    juce::Path envelope,outline;
+    for(int i=begin;i<end;++i) {
+      const float x=w*(i+.5f)/values.size();
+      const float h=heights[(size_t)i];
+      maximum=juce::jmax(maximum,h);
+      if(i==begin){
+        envelope.startNewSubPath(x,mid-h);
+        outline.startNewSubPath(x,mid-h);
+      }else{
+        envelope.lineTo(x,mid-h);
+        outline.lineTo(x,mid-h);
+      }
+    }
+    if(maximum<.7f)return;
+    for(int i=end-1;i>=begin;--i)
+      envelope.lineTo(w*(i+.5f)/values.size(),mid+heights[(size_t)i]);
+    envelope.closeSubPath();
+    g.setColour(Theme::mid.withAlpha(.13f));
+    g.fillPath(envelope);
+    g.setColour(Theme::bright.withAlpha(.48f));
+    g.strokePath(outline,juce::PathStrokeType(1.f));
+  };
+  drawSegment(0,cutLeft);
+  drawSegment(cutRight,(int)values.size());
  }
  void advance(){repaint();}
 private:

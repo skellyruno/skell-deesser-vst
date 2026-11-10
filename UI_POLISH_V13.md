@@ -31,3 +31,10 @@ menu art), and uploads `popup-filter.png`, `popup-preset.png`,
 `popup-settings.png`, and `popup-contact-sheet.png`. The screenshot job now
 gates on 24 PNGs plus the existing manifest. All menu windows are dismissed
 between captures.
+
+## Smooth live waveform
+
+The actual waveform is now rendered as a lightly smoothed JUCE Path envelope
+instead of hard-edged vertical pixel bars. A five-point *display-only* weighted
+filter preserves the same live waveform history, with subtle fill and separate
+left/right sections that never cross the threshold fader. No DSP/latency change.
