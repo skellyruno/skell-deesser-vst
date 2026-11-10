@@ -30,9 +30,19 @@ class IconButton:public juce::TextButton {public:explicit IconButton(const juce:
 class ReadoutBox:public juce::Label {public:ReadoutBox(){setJustificationType(juce::Justification::centred);
  setColour(textColourId,Theme::value);setColour(backgroundColourId,Theme::black);
  setColour(outlineColourId,Theme::mid);setColour(textWhenEditingColourId,Theme::value);
- setFont(Theme::font(20,true));setMinimumHorizontalScale(0.6f);setEditable(false,true,false);}};
-class SkullKnob: public juce::Slider {public:SkullKnob(){setSliderStyle(RotaryHorizontalVerticalDrag);setTextBoxStyle(NoTextBox,false,0,0);
- setMouseCursor(juce::MouseCursor::PointingHandCursor);setDoubleClickReturnValue(true,5860);}};
+ setColour(backgroundWhenEditingColourId,Theme::black);
+ setColour(outlineWhenEditingColourId,Theme::bright);
+ setFont(Theme::font(20,true));setMinimumHorizontalScale(0.72f);
+ setEditable(true,true,false);
+ setMouseCursor(juce::MouseCursor::IBeamCursor);
+}};
+class SkullKnob: public juce::Slider {public:SkullKnob(){
+ setSliderStyle(RotaryHorizontalVerticalDrag);setTextBoxStyle(NoTextBox,false,0,0);
+ setMouseCursor(juce::MouseCursor::PointingHandCursor);
+ setDoubleClickReturnValue(true,5860);
+ setScrollWheelEnabled(true);
+ setMouseDragSensitivity(240);
+}};
 class ThresholdFader:public juce::Slider {public:ThresholdFader(){setSliderStyle(LinearVertical);setTextBoxStyle(NoTextBox,false,0,0);
  setDoubleClickReturnValue(true,-24.);setMouseCursor(juce::MouseCursor::UpDownResizeCursor);
  setScrollWheelEnabled(true);}};

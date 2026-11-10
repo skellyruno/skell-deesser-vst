@@ -137,3 +137,5 @@ the waveform is quieter, and sidechain HPF selection immediately refreshes.
 The harness invokes the production button `onClick` handler directly because
 `triggerClick()` schedules events asynchronously in a headless message loop.
 The contact sheet renderer now flushes all JUCE drawing before PNG encoding.
+
+See [UI_POLISH_V13.md](UI_POLISH_V13.md) for the compact knob, value-editing, popup-menu and accessibility polish pass.

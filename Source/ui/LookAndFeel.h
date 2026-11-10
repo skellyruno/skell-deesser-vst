@@ -6,12 +6,30 @@ public:
  SkellyLookAndFeel(){setColour(juce::PopupMenu::backgroundColourId,Theme::black);
   setColour(juce::PopupMenu::textColourId,Theme::label);
   setColour(juce::PopupMenu::highlightedBackgroundColourId,Theme::dim);
+  setColour(juce::PopupMenu::highlightedTextColourId,Theme::value);
+  setColour(juce::PopupMenu::headerTextColourId,Theme::bright);
   setColour(juce::TextEditor::textColourId,Theme::value);
   setColour(juce::TextEditor::backgroundColourId,Theme::black);
   setColour(juce::TextEditor::outlineColourId,Theme::neon);}
+ juce::Font getPopupMenuFont() override { return Theme::font(15.f,false); }
+ void getIdealPopupMenuItemSize(const juce::String& text,bool separator,int standardHeight,
+                                int& idealWidth,int& idealHeight) override {
+  juce::LookAndFeel_V4::getIdealPopupMenuItemSize(text,separator,standardHeight,
+                                                  idealWidth,idealHeight);
+  if(!separator) {
+   idealHeight=juce::jlimit(25,32,idealHeight);
+   idealWidth=juce::jmax(idealWidth,130);
+  }
+ }
+ void drawPopupMenuBackground(juce::Graphics&g,int width,int height) override {
+  g.fillAll(Theme::black);
+  g.setColour(Theme::mid.withAlpha(.66f));
+  g.drawRect(0,0,width,height,1);
+ }
  void drawButtonBackground(juce::Graphics&g,juce::Button& b,const juce::Colour&,bool hover,bool down) override {
   auto r=b.getLocalBounds().toFloat().reduced(2);
-  const bool lit=b.getToggleState()||down;
+  const bool enabled=b.isEnabled();
+  const bool lit=enabled&&(b.getToggleState()||down);
   Theme::panel(g,r,lit);if(lit||hover)Theme::glow(g,r);
   // Strong, clearly visible selected state on the black/green metal panels.
   if(lit){
@@ -25,7 +43,11 @@ public:
    g.setColour(Theme::neon.withAlpha(.10f));g.fillRoundedRectangle(r.reduced(2),4);
   }
   // Highlight keyboard focus at the compact 55% default window.
-  if(b.hasKeyboardFocus(true)){
+  if(!enabled) {
+   g.setColour(Theme::black.withAlpha(.48f));
+   g.fillRoundedRectangle(r,4.f);
+  }
+  if(enabled&&b.hasKeyboardFocus(true)){
    g.setColour(Theme::bright.withAlpha(.90f));
    g.drawRoundedRectangle(r.reduced(.5f),5.f,1.5f);
   }
@@ -33,14 +55,24 @@ public:
  void drawButtonText(juce::Graphics&g,juce::TextButton&b,bool,bool) override {
   auto text=b.getButtonText();
   auto bounds=b.getLocalBounds().reduced(3);
-  g.setColour(b.getToggleState()?juce::Colours::white:Theme::label);
+  g.setColour(!b.isEnabled()?Theme::dim : b.getToggleState()?juce::Colours::white:Theme::label);
   // All glyphs are drawn as JUCE vectors: no missing-font Unicode symbols.
   if(text=="PREV" || text=="NEXT" || text=="FILTER"){
    const float cx=b.getWidth()*.5f,cy=b.getHeight()*.5f;
    juce::Path arrow;const bool left=text=="PREV";
    if(left){arrow.startNewSubPath(cx+7,cy-10);arrow.lineTo(cx-7,cy);arrow.lineTo(cx+7,cy+10);}
    else {arrow.startNewSubPath(cx-7,cy-10);arrow.lineTo(cx+7,cy);arrow.lineTo(cx-7,cy+10);}
-   if(text=="FILTER"){arrow.clear();arrow.addTriangle(cx-11,cy-5,cx+11,cy-5,cx,cy+8);g.fillPath(arrow);}
+   if(text=="FILTER"){
+    arrow.clear();arrow.addTriangle(cx-juce::jmax(3.f,b.getWidth()*.12f),
+      cy-juce::jmax(4.f,b.getHeight()*.12f),
+      cx+juce::jmax(3.f,b.getWidth()*.12f),
+      cy-juce::jmax(4.f,b.getHeight()*.12f),
+      cx,cy+juce::jmax(3.f,b.getHeight()*.10f));
+    g.fillPath(arrow);
+    g.setFont(Theme::font(juce::jlimit(7.f,10.f,b.getHeight()*.23f),true));
+    g.drawFittedText("TYPE",0,juce::roundToInt(b.getHeight()*.70f),b.getWidth(),
+                    juce::roundToInt(b.getHeight()*.25f),juce::Justification::centred,1);
+   }
    else g.strokePath(arrow,juce::PathStrokeType(3.f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
    return;
   }
@@ -71,12 +103,21 @@ public:
    path.lineTo(left+(right-left)*.65f,high);
    path.lineTo(right,high);
    g.strokePath(path,juce::PathStrokeType(juce::jmax(1.4f,b.getWidth()*.045f)));
+   g.setFont(Theme::font(juce::jlimit(7.f,10.f,b.getHeight()*.23f),true));
+   g.drawFittedText("HPF",0,juce::roundToInt(b.getHeight()*.72f),b.getWidth(),
+                   juce::roundToInt(b.getHeight()*.24f),juce::Justification::centred,1);
    return;
   }
-  const bool preset=text.contains("Default Preset")||text.startsWith("A: ")||text.startsWith("B: ");
-  const float fs=juce::jlimit(9.f,22.f,b.getHeight()*(preset?.49f:.51f));
-  g.setFont(Theme::font(fs,true));
-  g.drawFittedText(text,bounds,juce::Justification::centred,1,.68f);
+  const bool preset=text.startsWith("A: ")||text.startsWith("B: ");
+  const float fs=juce::jlimit(9.f,22.f,b.getHeight()*(preset?.48f:.51f));
+  auto font=Theme::font(fs,true);
+  if(preset) {
+   // Long preset names should ellipsize, never shrink to unreadable glyphs.
+   while(text.length()>4 && font.getStringWidthFloat(text)>bounds.getWidth())
+     text=text.dropLastCharacters(2)+"\xE2\x80\xA6";
+  }
+  g.setFont(font);
+  g.drawFittedText(text,bounds,juce::Justification::centred,1,.82f);
  }
  void drawLinearSlider(juce::Graphics&g,int x,int y,int w,int h,float, float,float,juce::Slider::SliderStyle,juce::Slider& slider) override {
   // Do not paint a black backing plate over the housing and live meter.
@@ -94,12 +135,20 @@ public:
  }
  void drawRotarySlider(juce::Graphics&g,int x,int y,int w,int h,float prop,float start,float end,juce::Slider&) override {
   const auto cx=x+w*.5f,cy=y+h*.5f,r=juce::jmin(w,h)*.38f;
-  for(int i=0;i<48;++i){const float a=start+(end-start)*i/47.f;
-   auto p1=juce::Point<float>(cx+std::cos(a)*r*1.14f,cy+std::sin(a)*r*1.14f);
+  constexpr int ticks=30;
+  for(int i=0;i<=ticks;++i){const float a=start+(end-start)*i/(float)ticks;
+   auto p1=juce::Point<float>(cx+std::cos(a)*r*1.16f,cy+std::sin(a)*r*1.16f);
    auto p2=juce::Point<float>(cx+std::cos(a)*r*1.26f,cy+std::sin(a)*r*1.26f);
-   g.setColour(i<=prop*47?Theme::neon:Theme::dim);g.drawLine(juce::Line<float>(p1,p2),1.7f);}
+   g.setColour(i<=prop*ticks?Theme::neon.withAlpha(.95f):Theme::dim);
+   g.drawLine(juce::Line<float>(p1,p2),juce::jmax(.8f,r*.027f));}
   juce::Path arc;arc.addCentredArc(cx,cy,r,r,0,start,start+(end-start)*prop,true);
-  g.setColour(Theme::neon);g.strokePath(arc,juce::PathStrokeType(5.f));
+  g.setColour(Theme::neon.withAlpha(.87f));
+  g.strokePath(arc,juce::PathStrokeType(juce::jmax(1.9f,r*.09f),
+       juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
+  const auto current=start+(end-start)*prop;
+  g.setColour(Theme::value);
+  g.fillEllipse(cx+std::cos(current)*r*1.16f-r*.065f,
+                cy+std::sin(current)*r*1.16f-r*.065f,r*.13f,r*.13f);
   g.setColour(juce::Colour::fromRGB(12,22,14));g.fillEllipse(cx-r*.9f,cy-r*.9f,r*1.8f,r*1.8f);
   g.setColour(Theme::bright);g.drawEllipse(cx-r*.9f,cy-r*.9f,r*1.8f,r*1.8f,1.2f);
   if(knobImage.isValid())g.drawImage(knobImage,cx-r*.9f,cy-r*.9f,r*1.8f,r*1.8f,0,0,knobImage.getWidth(),knobImage.getHeight());

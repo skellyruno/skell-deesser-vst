@@ -76,23 +76,38 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
   if(khz)t=t.dropLastCharacters(1);
   if(t.isNotEmpty() && t.containsOnly("0123456789.")) {
    const auto value=t.getDoubleValue()*(khz?1000.0:1.0);
-   if(std::isfinite(value)&&value>=1000.0&&value<=20000.0)
+   if(std::isfinite(value)&&value>=1000.0&&value<=20000.0){
     setFloat("frequency",(float)value);
+    frequencyValue.setText(juce::String((int)frequency.getValue())+" Hz",juce::dontSendNotification);
+    return;
+   }
   }
+  frequencyValue.setText(juce::String((int)frequency.getValue())+" Hz",juce::dontSendNotification);
  };
  thresholdValue.onTextChange=[this]{
   auto t=thresholdValue.getText().trim().toLowerCase().removeCharacters(" ");
   if(t.endsWith("db"))t=t.dropLastCharacters(2);
   if(t.isNotEmpty() && t.containsOnly("-0123456789.")){
    const double value=t.getDoubleValue();
-   if(std::isfinite(value)&&value>=-60.0&&value<=0.0)
+   if(std::isfinite(value)&&value>=-60.0&&value<=0.0){
     setFloat("threshold",(float)value);
+    thresholdValue.setText(juce::String(threshold.getValue(),1)+" dB",juce::dontSendNotification);
+    return;
+   }
   }
+  thresholdValue.setText(juce::String(threshold.getValue(),1)+" dB",juce::dontSendNotification);
  };
  split.onClick=[this]{setFloat("phraseAware",0.f);setChoice("detectMode",0);};
  wide.onClick=[this]{setFloat("phraseAware",0.f);setChoice("detectMode",1);};
  phraseButton.onClick=[this]{setChoice("detectMode",0);setFloat("phraseAware",1.f);updateButtons();repaint();};
  phraseButton.setTooltip("Phrase-Aware: learn a singer's normal sibilance per phrase; reduce outliers.");
+ filter.setTooltip("Choose the detector filter type. Current choice is marked in the menu.");
+ hpf.setTooltip("Enable or disable the sidechain high-pass filter.");
+ settings.setTooltip("Audio controls, phrase sensitivity, window size, and plugin information.");
+ preset.setTooltip("Import, export or reset a preset. A/B slots switch with the arrow buttons.");
+ prev.setTooltip("Switch to the other A/B preset slot.");
+ next.setTooltip("Switch to the other A/B preset slot.");
+ save.setTooltip("Export the current A/B preset.");
  frequency.setTooltip("Detector centre frequency: drag knob, scroll, or edit Hz below.");
  threshold.setTooltip("Threshold: drag the skull. Double-click restores -24 dB.");
  frequencyValue.setTooltip("Enter 5860, 5.86k, or 5860 Hz and press Enter.");
@@ -107,23 +122,37 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
   setFloat("sidechainHpf",v->load()>.5f?0.f:1.f);
   updateButtons();repaint();
  };
- filter.onClick=[this]{juce::PopupMenu m;juce::StringArray names{"Off","HPF 6 dB","HPF 12 dB","Band-Pass","Listen Filter"};
-  for(int i=0;i<names.size();++i)m.addItem(i+1,names[i],true,i==(int)processor.apvts.getRawParameterValue("sidechainFilterType")->load());
-  auto safe = juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
-   m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&filter),[safe](int r){if(safe&&r>0)safe->setChoice("sidechainFilterType",r-1);});};
+ filter.onClick=[this]{
+  juce::PopupMenu m;
+  m.addSectionHeader("Detector filter");
+  const juce::StringArray names{"Off","High-pass 6 dB","High-pass 12 dB",
+                                "Band-pass","Listen filter"};
+  const int choice=(int)processor.apvts.getRawParameterValue("sidechainFilterType")->load();
+  for(int i=0;i<names.size();++i)
+   m.addItem(i+1,names[i],true,i==choice);
+  auto safe=juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
+  m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&filter)
+                 .withMinimumWidth(225).withMaximumNumColumns(1),
+                 [safe](int selected) {
+    if(safe && selected>=1 && selected<=5)
+     safe->setChoice("sidechainFilterType",selected-1);
+  });
+ };
  settings.onClick=[this]{showSettings();};
  preset.onClick=[this]{
   juce::PopupMenu m;
-  m.addItem(1,"Load preset file...");
-  m.addItem(2,"Export current preset...");
+  m.addSectionHeader("Preset and A/B");
+  m.addItem(1,"Import .skelly preset...");
+  m.addItem(2,"Export current .skelly preset...");
   m.addSeparator();
-  m.addItem(3,"Initialize parameters");
+  m.addItem(3,"Reset processing to defaults");
   auto safe=juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
-  m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&preset),[safe](int r){
+  m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&preset)
+                   .withMinimumWidth(245).withMaximumNumColumns(1),[safe](int r){
    if(!safe)return;
    if(r==1)safe->loadPresetFile();
    else if(r==2)safe->savePresetFile();
-   else if(r==3)safe->processor.restoreDefaults();
+   else if(r==3){safe->processor.restoreDefaults();safe->updateButtons();safe->repaint();}
   });
  };
  prev.onClick=next.onClick=[this]{processor.switchSlot(1-processor.getSlot());updateButtons();};
@@ -225,13 +254,10 @@ void SkellyDeEsserAudioProcessorEditor::loadPresetFile(){
   });
 }
 void SkellyDeEsserAudioProcessorEditor::showSettings(){
+ // Keep the top-level menu short enough for the 540x360 minimum window.
+ // More detailed controls stay grouped in small, keyboard-navigable submenus.
  juce::PopupMenu m;
- m.addItem(1,"Reset parameters to defaults");
- m.addItem(2,"Copy A to B");
- m.addSeparator();
- m.addSectionHeader("DE-ESSING CONTROLS");
- // Each option is a real host-automatable APVTS parameter, not an editor-only knob.
- // The checked values are displayed in the submenu titles.
+ juce::PopupMenu processing,phrase,presets,sizes;
  struct MenuParam {const char* key;const char* name;const char* units;float step;int base;};
  constexpr MenuParam menuParams[] = {
   {"ratio","Ratio",":1",.5f,100},
@@ -244,26 +270,34 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
  };
  for(const auto& p:menuParams){
   const auto value=processor.apvts.getRawParameterValue(p.key)->load();
-  juce::PopupMenu sub;
-  sub.addItem(p.base+1,"Decrease by " + juce::String(p.step,1) + p.units);
-  sub.addItem(p.base+2,"Increase by " + juce::String(p.step,1) + p.units);
-  sub.addItem(p.base+3,"Reset to default");
-  m.addSubMenu(juce::String(p.name) + "  " + juce::String(value,1) + p.units,sub);
+  juce::PopupMenu adjustments;
+  adjustments.addItem(p.base+1,"Decrease  " + juce::String(p.step,1) + p.units);
+  adjustments.addItem(p.base+2,"Increase  " + juce::String(p.step,1) + p.units);
+  adjustments.addItem(p.base+3,"Restore default");
+  const auto title=juce::String(p.name)+"   "+juce::String(value,1)+p.units;
+  if(p.base==160)phrase.addSubMenu(title,adjustments);
+  else processing.addSubMenu(title,adjustments);
  }
- m.addSeparator();
- juce::PopupMenu sizes;
+ m.addSectionHeader("Skelly DeEsser settings");
+ m.addSubMenu("Processing controls",processing);
+ m.addSubMenu("Phrase-Aware",phrase);
  sizes.addItem(201,"Compact (55%)",true,getWidth()==633);
  sizes.addItem(202,"Medium (70%)",true,getWidth()==806);
  sizes.addItem(203,"Large (85%)",true,getWidth()==979);
  sizes.addItem(204,"Original (100%)",true,getWidth()==1152);
  m.addSubMenu("Window size",sizes);
+ presets.addItem(1,"Reset processing to defaults");
+ presets.addItem(2,"Copy A to B");
+ m.addSubMenu("Preset actions",presets);
+ m.addSeparator();
  m.addItem(9,"About Skelly DeEsser V12");
  const auto safe=juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
- m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&settings),[safe](int r){
+ m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&settings)
+                  .withMinimumWidth(240).withMaximumNumColumns(1),[safe](int r){
   if(!safe)return;
   auto& self=*safe;
-  if(r==1){self.processor.restoreDefaults();return;}
-  if(r==2){self.processor.copyAToB();return;}
+  if(r==1){self.processor.restoreDefaults();self.updateButtons();self.repaint();return;}
+  if(r==2){self.processor.copyAToB();self.updateButtons();return;}
   if(r>=201 && r<=204){
    constexpr int widths[]{633,806,979,1152};
    const int width=widths[r-201];
@@ -348,8 +382,8 @@ void SkellyDeEsserAudioProcessorEditor::paint(juce::Graphics&g){
   Theme::line(g,i%5?812.f:808.f,y,i%5?819.f:827.f,y,i%5?.45f:.90f);
   if(i%5==0)title(g,juce::String(-2*i),{830,(int)y-14,63,27},22);
  }
- title(g,"1k",{76,529,43,24},15);
- title(g,"20k",{244,529,47,24},15);
+ title(g,"1 kHz",{76,529,69,24},16);
+ title(g,"20 kHz",{225,529,69,24},16);
 
  const auto reduction=juce::jmax(0.f,processor.engine.gainReductionDb.load());
  // Separate 24 dB gain-reduction LED meter; the tall central meter is SC level.
