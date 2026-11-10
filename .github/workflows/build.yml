@@ -33,6 +33,18 @@ jobs:
           retention-days: 1
           name: SkellyDeEsser-Windows-Standalone
           path: SkellyDeEsser-Windows-Standalone.zip
+      # CI-only validation; no runtime dependencies added to the VST3.
+      - name: pluginval VST3 host validation (strictness 5)
+        shell: pwsh
+        run: |
+          $plugin = Get-ChildItem build -Directory -Recurse -Filter 'Skelly DeEsser.vst3' | Select-Object -First 1
+          if (!$plugin) { throw 'VST3 bundle missing before pluginval' }
+          Invoke-WebRequest 'https://github.com/Tracktion/pluginval/releases/download/v1.0.4/pluginval_Windows.zip' -OutFile pluginval_Windows.zip
+          Expand-Archive pluginval_Windows.zip -DestinationPath pluginval_bin -Force
+          $validator = Get-ChildItem pluginval_bin -File -Recurse -Filter 'pluginval.exe' | Select-Object -First 1
+          if (!$validator) { throw 'pluginval.exe missing from pinned release' }
+          & $validator.FullName --strictness-level 5 $plugin.FullName
+          if ($LASTEXITCODE -ne 0) { throw "pluginval validation failed with $LASTEXITCODE" }
 
   dsp-regression:
     runs-on: ubuntu-latest
@@ -42,7 +54,7 @@ jobs:
         shell: bash
         run: |
           CXX=g++ bash tests/run_smoke.sh
-          for test in filter_smoke waveform_smoke engine_smoke band_regression engine_regression phrase_aware_regression phrase_gate_regression filter_automation_regression extreme_stress realtime_alloc_stress detector_startup_regression waveform_idle_regression; do
+          for test in filter_smoke waveform_smoke engine_smoke band_regression engine_regression phrase_aware_regression phrase_gate_regression filter_automation_regression extreme_stress realtime_alloc_stress detector_startup_regression waveform_idle_regression block_partition_regression; do
             extra=()
             if [[ "$test" == "realtime_alloc_stress" ]]; then extra+=(-Wno-mismatched-new-delete); fi
             g++ -std=c++17 -O1 -g -fsanitize=undefined -fno-sanitize-recover=all "${extra[@]}" -Itests/juce_stub "tests/${test}.cpp" -o "/tmp/skelly_ubsan_${test}"

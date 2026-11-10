@@ -24,6 +24,11 @@ public:
   }else if(hover){
    g.setColour(Theme::neon.withAlpha(.10f));g.fillRoundedRectangle(r.reduced(2),4);
   }
+  // Highlight keyboard focus at the compact 55% default window.
+  if(b.hasKeyboardFocus(true)){
+   g.setColour(Theme::bright.withAlpha(.90f));
+   g.drawRoundedRectangle(r.reduced(.5f),5.f,1.5f);
+  }
  }
  void drawButtonText(juce::Graphics&g,juce::TextButton&b,bool,bool) override {
   auto text=b.getButtonText();

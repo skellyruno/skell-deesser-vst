@@ -88,3 +88,7 @@ The source tree now has a deterministic hostile-host stress test (11 sample rate
 - Expanded first-buffer monitor and waveform-idle regression checks in the existing CI job.
 
 See [V12_ENGINEERING_NOTES.md](V12_ENGINEERING_NOTES.md).
+
+## V12.2 host validation
+
+The Windows workflow now runs pinned pluginval v1.0.4 at strictness level 5 after compiling the VST3. This is a **CI-only** validator with no new plugin runtime dependency. New buffer partition regression tests compare identical input across 1–8192 sample host blocks. Buttons have a visible focus outline when selected from the keyboard.

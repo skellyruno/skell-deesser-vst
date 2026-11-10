@@ -43,4 +43,5 @@ for width,height in [(540,360),(633,422),(806,537),(979,653),(1152,768),(1536,10
     for name,(x,y,w,h) in placements.items():
         scaled=(round(x*width/1536),round(y*height/1024),round(w*width/1536),round(h*height/1024))
         assert scaled[2]>0 and scaled[3]>0, name
+assert 'b.hasKeyboardFocus(true)' in look
 print('UI geometry source checks passed (including compact 633x422 layout)')
