@@ -12,6 +12,8 @@ int main() {
  for(int i=0;i<320;++i)history.push(i==0?0.5f:0.0f);
  const auto active=history.serial();
  assert(active>start && "input transient must wake waveform display");
+ for(int i=0;i<320;++i)history.push(0.0f);
+ assert(history.serial()>active && "nonzero historical peaks must continue scrolling");
  for(int i=0;i<256*480;++i)history.push(0.0f);
  const auto settled=history.serial();
  assert(settled>active && "transient must eventually leave the scrolling ring");

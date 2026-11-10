@@ -11,7 +11,7 @@ public:
  static constexpr unsigned length = 256;
  void prepare(double sampleRate) noexcept {
   stride = std::max(1u, static_cast<unsigned>(sampleRate / 180.0));
-  count = 0; maximum = 0.f;
+  count = 0; maximum = 0.f; visibleCells = 0;
   for (auto& value : peaks) value.store(0.f, std::memory_order_relaxed);
   writePosition.store(0, std::memory_order_relaxed);
   visualRevision.store(0, std::memory_order_relaxed);
@@ -25,9 +25,13 @@ public:
    const auto previous=peaks[index].load(std::memory_order_relaxed);
    peaks[index].store(maximum, std::memory_order_relaxed);
    writePosition.store(next, std::memory_order_release);
-   // Keep the ring clock running, but don't wake the GUI if that pixel column
-   // is unchanged. Long silences/steady levels no longer force repaints.
-   if(previous!=maximum) visualRevision.fetch_add(1,std::memory_order_release);
+   // Even when the overwritten cell is silent, an older nonzero peak is still
+   // scrolling. Keep animating until the last visible transient leaves.
+   constexpr float visibleFloor=.002f;
+   if(previous>=visibleFloor) --visibleCells;
+   if(maximum>=visibleFloor) ++visibleCells;
+   if(visibleCells>0 || std::abs(previous-maximum)>=visibleFloor)
+    visualRevision.fetch_add(1,std::memory_order_release);
    maximum = 0.f; count = 0;
   }
  }
@@ -43,6 +47,6 @@ public:
 private:
  std::array<std::atomic<float>, length> peaks{};
  std::atomic<uint64_t> writePosition{0}, visualRevision{0};
- unsigned stride = 256, count = 0;
+ unsigned stride = 256, count = 0, visibleCells = 0;
  float maximum = 0.f;
 };
