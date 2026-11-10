@@ -310,11 +310,11 @@ int main(int argc,char** argv) {
     if(!contactSheet(output)) {
       std::fprintf(stderr,"Could not create contact sheet from actual captures\n");++failures;
     }
-    for(const auto& menu:std::array<std::pair<const char*,const char*>,3>{{{
+    for(const auto& menu:std::array<std::pair<const char*,const char*>,3>{{
       {"FILTER","popup-filter"},
       {"A: My Default Preset","popup-preset"},
       {"MENU","popup-settings"}
-    }}}){
+    }}){
       if(!captureActualPopup(editor,menu.first,output,menu.second)){
         std::fprintf(stderr,"Popup capture failed: %s\n",menu.second);
         ++failures;
