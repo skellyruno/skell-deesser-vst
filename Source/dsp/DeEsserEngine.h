@@ -85,7 +85,14 @@ public:
    phraseModeSmooth.setCurrentAndTargetValue(safe.mode==2 ? 1.0 : 0.0);
    monitorSmooth.setCurrentAndTargetValue(safe.monitor==1 ? 1.0 : 0.0);
    currentFreq=std::clamp((double)safe.frequency,70.0,rate*.30);
-   lastConfiguredFreq=-1.0;
+   // Initialize the detector tap and frequency-dependent stages to the
+   // restored preset before producing the first sample. Later changes ramp.
+   for(auto& f:detectors)f.configureImmediate(currentFreq,safe.filterType,safe.hpf);
+   for(auto& b:band)b.setFrequency(currentFreq);
+   lastConfiguredFreq=currentFreq;
+   lastFilterType=safe.filterType;
+   lastHpf=safe.hpf;
+   ++filterReconfigurations;
    firstAudioBlock=false;
   }
   for(auto& f:envelopes)f.update(safe.attack,safe.release);

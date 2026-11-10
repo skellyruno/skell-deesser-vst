@@ -241,7 +241,7 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
  sizes.addItem(203,"Large (85%)",true,getWidth()==979);
  sizes.addItem(204,"Original (100%)",true,getWidth()==1152);
  m.addSubMenu("Window size",sizes);
- m.addItem(9,"About Skelly DeEsser V11");
+ m.addItem(9,"About Skelly DeEsser V12");
  const auto safe=juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
  m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&settings),[safe](int r){
   if(!safe)return;
@@ -255,7 +255,7 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
    return;
   }
   if(r==9){
-   juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,"Skelly DeEsser V11",
+   juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,"Skelly DeEsser V12",
     "Gothic stereo de-esser. Split, Wide and Phrase-Aware, zero reported latency, and host automation.");
    return;
   }

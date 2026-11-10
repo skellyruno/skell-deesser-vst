@@ -128,6 +128,20 @@ bool SkellyDeEsserAudioProcessor::loadValidatedPresetData(const void* data,int s
  const auto xml=getXmlFromBinary(data,size);
  if(!xml)return false;
  if(!xml->hasTagName("SkellyDocument") && !xml->hasTagName(apvts.state.getType().toString()))return false;
+ // Reject empty or forged preset documents without mutating the active state.
+ // Legacy SkellyState roots remain supported for older exported presets.
+ const auto state=juce::ValueTree::fromXml(*xml);
+ const auto parameters=state.hasType(juce::Identifier("SkellyDocument")) ? state.getChild(0) : state;
+ if(!parameters.isValid() || !parameters.hasType(apvts.state.getType()))return false;
+ bool hasThreshold=false,hasFrequency=false;
+ for(int i=0;i<parameters.getNumChildren();++i){
+  const auto entry=parameters.getChild(i);
+  if(!entry.hasType(juce::Identifier("PARAM")))continue;
+  const auto paramId=entry.getProperty("id").toString();
+  hasThreshold = hasThreshold || paramId=="threshold";
+  hasFrequency = hasFrequency || paramId=="frequency";
+ }
+ if(!hasThreshold || !hasFrequency)return false;
  setStateInformation(data,size);
  return true;
 }

@@ -53,6 +53,13 @@ public:
   target.fill(0.0);
   target[static_cast<size_t>(tap)] = 1.0;
  }
+ // A restored session should start on the selected detector tap, not crossfade
+ // from the factory HPF-12 tap during the first few milliseconds of playback.
+ // This is only used on initialisation; subsequent mode changes still ramp.
+ void configureImmediate(double freq, int mode, bool hpf) noexcept {
+  configure(freq,mode,hpf);
+  weights=target;
+ }
  void setModeSmoothing(double ms) noexcept {
   const auto seconds = std::max(.001, ms * .001);
   smooth = 1.0 - std::exp(-1.0/(sampleRate*seconds));

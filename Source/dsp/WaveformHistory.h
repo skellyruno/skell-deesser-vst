@@ -14,18 +14,24 @@ public:
   count = 0; maximum = 0.f;
   for (auto& value : peaks) value.store(0.f, std::memory_order_relaxed);
   writePosition.store(0, std::memory_order_relaxed);
+  visualRevision.store(0, std::memory_order_relaxed);
  }
  void push(float sample) noexcept {
   if (!std::isfinite(sample)) sample = 0.f;
   maximum = std::max(maximum, std::min(1.f, std::abs(sample)));
   if (++count >= stride) {
    auto next = writePosition.load(std::memory_order_relaxed) + 1;
-   peaks[next % length].store(maximum, std::memory_order_relaxed);
+   const auto index=next % length;
+   const auto previous=peaks[index].load(std::memory_order_relaxed);
+   peaks[index].store(maximum, std::memory_order_relaxed);
    writePosition.store(next, std::memory_order_release);
+   // Keep the ring clock running, but don't wake the GUI if that pixel column
+   // is unchanged. Long silences/steady levels no longer force repaints.
+   if(previous!=maximum) visualRevision.fetch_add(1,std::memory_order_release);
    maximum = 0.f; count = 0;
   }
  }
- uint64_t serial() const noexcept { return writePosition.load(std::memory_order_acquire); }
+ uint64_t serial() const noexcept { return visualRevision.load(std::memory_order_acquire); }
  void copy(float* destination, unsigned size) const noexcept {
   const auto end = writePosition.load(std::memory_order_acquire);
   const auto n = std::min(size, length);
@@ -36,7 +42,7 @@ public:
  }
 private:
  std::array<std::atomic<float>, length> peaks{};
- std::atomic<uint64_t> writePosition{0};
+ std::atomic<uint64_t> writePosition{0}, visualRevision{0};
  unsigned stride = 256, count = 0;
  float maximum = 0.f;
 };

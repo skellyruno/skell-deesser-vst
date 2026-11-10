@@ -80,3 +80,11 @@ See [V10_ENGINEERING_NOTES.md](V10_ENGINEERING_NOTES.md): lower realtime CPU loa
 ## V11 stress and pre-release gate
 
 The source tree now has a deterministic hostile-host stress test (11 sample rates, 0–8192 sample blocks, corrupt samples/parameters, mono/stereo, mode switching) and a DSP allocation test. Run with `bash tests/run_smoke.sh`; CI also runs AddressSanitizer and UndefinedBehaviorSanitizer. See [RELEASE_READINESS.md](RELEASE_READINESS.md) for the outstanding release gates and [V11_ENGINEERING_NOTES.md](V11_ENGINEERING_NOTES.md) for what was and was not verified.
+## V12 maintenance
+
+- Restored sidechain monitor filtering takes effect on the first sample; later filter changes still crossfade.
+- Idle waveform rendering stops issuing redraw requests after the visible history reaches silence.
+- Preset import rejects empty/corrupt parameter state without replacing active settings.
+- Expanded first-buffer monitor and waveform-idle regression checks in the existing CI job.
+
+See [V12_ENGINEERING_NOTES.md](V12_ENGINEERING_NOTES.md).
