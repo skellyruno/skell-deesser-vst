@@ -22,3 +22,35 @@ target_sources(SkellyDeEsser PRIVATE
 target_compile_features(SkellyDeEsser PRIVATE cxx_std_17)
 target_compile_definitions(SkellyDeEsser PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)
 target_link_libraries(SkellyDeEsser PRIVATE SkellyArt juce::juce_audio_utils juce::juce_audio_processors juce::juce_gui_extra)
+
+
+# Development-only real-JUCE-editor screenshot harness. The VST3 and Standalone
+# do not link SkellCore or carry renderer code. Pin upstream, never track main.
+option(SKELLY_DEESSER_BUILD_UI_RENDERER "Build real editor SkellCore PNG capture tool" OFF)
+if(SKELLY_DEESSER_BUILD_UI_RENDERER)
+  if(DEFINED SKELLCORE_PATH AND EXISTS "${SKELLCORE_PATH}/CMakeLists.txt")
+    add_subdirectory("${SKELLCORE_PATH}" SkellCoreLocal)
+  else()
+    FetchContent_Declare(SkellCoreRendererDependency
+      GIT_REPOSITORY https://github.com/skellyruno/skell-vst-template.git
+      GIT_TAG 438bc74a86a40bf54cfa8089832a477822c8ccda
+      GIT_SHALLOW FALSE
+      SOURCE_SUBDIR SkellCore)
+    FetchContent_MakeAvailable(SkellCoreRendererDependency)
+  endif()
+
+  if(NOT TARGET SkellCore::UIRenderer)
+    message(FATAL_ERROR "Pinned SkellCore commit does not provide SkellCore::UIRenderer")
+  endif()
+  # Plain executable, not juce_add_console_app: that macro's
+  # JUCE_STANDALONE_APPLICATION definition conflicts with plugin SharedCode.
+  add_executable(SkellyDeEsserUIRenderer tests/ui_renderer.cpp)
+  target_include_directories(SkellyDeEsserUIRenderer PRIVATE
+    "${CMAKE_CURRENT_BINARY_DIR}/SkellyDeEsser_artefacts/JuceLibraryCode")
+  target_link_libraries(SkellyDeEsserUIRenderer PRIVATE
+    SkellyDeEsser SkellyArt SkellCore::UIRenderer
+    juce::juce_audio_utils juce::juce_gui_extra)
+  target_compile_definitions(SkellyDeEsserUIRenderer PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)
+  target_compile_features(SkellyDeEsserUIRenderer PRIVATE cxx_std_17)
+endif()

@@ -92,3 +92,39 @@ See [V12_ENGINEERING_NOTES.md](V12_ENGINEERING_NOTES.md).
 ## V12.2 host validation
 
 The Windows workflow now runs pinned pluginval v1.0.4 at strictness level 5 after compiling the VST3. This is a **CI-only** validator with no new plugin runtime dependency. New buffer partition regression tests compare identical input across 1–8192 sample host blocks. Buttons have a visible focus outline when selected from the keyboard.
+
+## Permanent SkellCore headless JUCE UI-renderer workflow
+
+Development builds can opt into `SkellyDeEsserUIRenderer` via
+`-DSKELLY_DEESSER_BUILD_UI_RENDERER=ON`. Normal VST3 and Standalone releases
+do **not** fetch or link SkellCore.
+
+- **Pinned SkellCore commit:** `438bc74a86a40bf54cfa8089832a477822c8ccda`
+- **JUCE:** existing `8.0.12` pin
+- **True editor:** `SkellyDeEsserAudioProcessorEditor` instantiated with the
+  real `SkellyDeEsserAudioProcessor` and its actual APVTS and DSP engine.
+- **CI:** `.github/workflows/ui-renderer.yml` runs on UI code/assets/CMake
+  changes, pull requests and manual dispatch. It uploads per-scene PNGs,
+  a contact sheet and `manifest.json`. Failures stop the screenshot job.
+- **Scenes:** minimum 540×360, default 633×422, medium 806×537,
+  large 979×653, maximum 1536×1024; Split/Wide/Phrase,
+  sidechain monitoring, HPF, A/B preset, disabled button,
+  frequency/threshold extremes, and keyboard focus.
+- **Interaction smoke checks:** actual JUCE mode/monitor buttons, fader,
+  knob and A/B controls must change their real processor parameter values.
+- **Layout checks:** all visible direct child components stay inside the
+  editor; image captures must be nonblank; important modes and fader positions
+  must produce distinct image hashes.
+
+Run locally on a Windows machine with CMake and supported Visual Studio:
+```powershell
+cmake -S . -B build-ui -A x64 -DSKELLY_DEESSER_BUILD_UI_RENDERER=ON
+cmake --build build-ui --config Release --target SkellyDeEsserUIRenderer
+.\build-ui\Release\SkellyDeEsserUIRenderer.exe ui-screenshots
+```
+
+**Workflow rule:** After any meaningful UI change, repeat:
+BUILD → RENDER → INSPECT ACTUAL PNGs → FIX → RENDER AGAIN.
+The PNG renderer does not certify OS-level popup menus or DAW-specific
+high-DPI/window behavior; those need separate real-host visual checks.
+The renderer is intentionally not embedded into the released VST3.

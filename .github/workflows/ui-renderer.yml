@@ -1,0 +1,47 @@
+name: Skelly DeEsser / Headless JUCE UI regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'CMakeLists.txt'
+      - 'Source/**'
+      - 'Assets/**'
+      - 'tests/ui_renderer.cpp'
+      - '.github/workflows/ui-renderer.yml'
+  pull_request:
+    paths:
+      - 'CMakeLists.txt'
+      - 'Source/**'
+      - 'Assets/**'
+      - 'tests/ui_renderer.cpp'
+      - '.github/workflows/ui-renderer.yml'
+  workflow_dispatch:
+
+jobs:
+  real-editor-screenshots:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - name: Configure development renderer (pinned SkellCore + JUCE)
+        run: cmake -S . -B build-ui -A x64 -DSKELLY_DEESSER_BUILD_UI_RENDERER=ON
+      - name: Compile real plugin processor, editor and renderer
+        run: cmake --build build-ui --config Release --target SkellyDeEsserUIRenderer --parallel 2
+      - name: Render real editor across sizes, modes and states
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem build-ui -Recurse -File -Filter SkellyDeEsserUIRenderer.exe | Select-Object -First 1
+          if (!$exe) { throw 'SkellyDeEsserUIRenderer.exe was not built' }
+          & $exe.FullName (Join-Path (Get-Location) 'ui-screenshots')
+          if ($LASTEXITCODE -ne 0) { throw "UI renderer or regression checks failed: $LASTEXITCODE" }
+          $pngs = @(Get-ChildItem ui-screenshots -File -Filter '*.png')
+          if ($pngs.Count -ne 20) { throw "Expected 19 scenes plus contact sheet, found $($pngs.Count)" }
+          if (!(Test-Path ui-screenshots/manifest.json)) { throw 'Missing screenshot manifest' }
+      - name: Upload actual JUCE screenshots and contact sheet
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: Skelly-DeEsser-Real-JUCE-UI
+          path: ui-screenshots/*
+          if-no-files-found: warn
+          retention-days: 30
