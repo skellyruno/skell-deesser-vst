@@ -38,3 +38,13 @@ The actual waveform is now rendered as a lightly smoothed JUCE Path envelope
 instead of hard-edged vertical pixel bars. A five-point *display-only* weighted
 filter preserves the same live waveform history, with subtle fill and separate
 left/right sections that never cross the threshold fader. No DSP/latency change.
+
+## Popup LookAndFeel root-cause fix
+
+Real headless screenshots exposed a JUCE nuance: desktop popup windows do not
+inherit the editor's LookAndFeel. Before this fix they rendered gray despite
+the Skelly neon colors being configured. Every popup menu, including nested
+processing, phrase and size submenus, now explicitly points to the editor's
+SkellyLookAndFeel, with a consistent dark background, green highlighted items,
+legible 15 px menu text and compact spacing. The editor dismisses active
+popups on destruction before the LookAndFeel member is released.

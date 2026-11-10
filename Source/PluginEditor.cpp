@@ -124,6 +124,7 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  };
  filter.onClick=[this]{
   juce::PopupMenu m;
+  m.setLookAndFeel(&look); // PopupMenu is a desktop window, not editor child.
   m.addSectionHeader("Detector filter");
   const juce::StringArray names{"Off","High-pass 6 dB","High-pass 12 dB",
                                 "Band-pass","Listen filter"};
@@ -141,6 +142,7 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  settings.onClick=[this]{showSettings();};
  preset.onClick=[this]{
   juce::PopupMenu m;
+  m.setLookAndFeel(&look);
   m.addSectionHeader("Preset and A/B");
   m.addItem(1,"Import .skelly preset...");
   m.addItem(2,"Export current .skelly preset...");
@@ -176,7 +178,12 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
 
  startTimerHz(24); // Lower idle repaint cost without reducing the audio processing rate.
 }
-SkellyDeEsserAudioProcessorEditor::~SkellyDeEsserAudioProcessorEditor(){setLookAndFeel(nullptr);}
+SkellyDeEsserAudioProcessorEditor::~SkellyDeEsserAudioProcessorEditor(){
+ // Popup desktop windows retain a LookAndFeel pointer; dismiss before
+ // the editor-owned SkellyLookAndFeel is destroyed on host editor close.
+ juce::PopupMenu::dismissAllActiveMenus();
+ setLookAndFeel(nullptr);
+}
 void SkellyDeEsserAudioProcessorEditor::setFloat(const char* id,float v){
  if(!std::isfinite(v))return;
  if(auto*p=processor.apvts.getParameter(id)){
@@ -258,6 +265,8 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
  // More detailed controls stay grouped in small, keyboard-navigable submenus.
  juce::PopupMenu m;
  juce::PopupMenu processing,phrase,presets,sizes;
+ for(auto* menu:{&m,&processing,&phrase,&presets,&sizes})
+  menu->setLookAndFeel(&look);
  struct MenuParam {const char* key;const char* name;const char* units;float step;int base;};
  constexpr MenuParam menuParams[] = {
   {"ratio","Ratio",":1",.5f,100},
@@ -271,6 +280,7 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
  for(const auto& p:menuParams){
   const auto value=processor.apvts.getRawParameterValue(p.key)->load();
   juce::PopupMenu adjustments;
+  adjustments.setLookAndFeel(&look);
   adjustments.addItem(p.base+1,"Decrease  " + juce::String(p.step,1) + p.units);
   adjustments.addItem(p.base+2,"Increase  " + juce::String(p.step,1) + p.units);
   adjustments.addItem(p.base+3,"Restore default");
