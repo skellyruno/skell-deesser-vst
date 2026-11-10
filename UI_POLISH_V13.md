@@ -21,3 +21,13 @@ Changes based on the verified SkellCore real-JUCE screenshots:
 - Build/render/inspect using the pinned SkellCore runner and check the popup
   menu placement in the actual host; verify accessibility at 540x360 and HiDPI.
 - Linux portable DSP tests and Windows VST3/pluginval remain gating.
+
+## Actual JUCE popup screenshot regression
+
+The SkellCore screenshot job opens real `PopupMenu` windows from the editor's
+filter, preset and Settings button handlers on the Windows desktop. It captures
+the popup components composited alongside the real JUCE editor (not simulated
+menu art), and uploads `popup-filter.png`, `popup-preset.png`,
+`popup-settings.png`, and `popup-contact-sheet.png`. The screenshot job now
+gates on 24 PNGs plus the existing manifest. All menu windows are dismissed
+between captures.

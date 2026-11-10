@@ -35,7 +35,7 @@ jobs:
           & $exe.FullName (Join-Path (Get-Location) 'ui-screenshots')
           if ($LASTEXITCODE -ne 0) { throw "UI renderer or regression checks failed: $LASTEXITCODE" }
           $pngs = @(Get-ChildItem ui-screenshots -File -Filter '*.png')
-          if ($pngs.Count -ne 20) { throw "Expected 19 scenes plus contact sheet, found $($pngs.Count)" }
+          if ($pngs.Count -ne 24) { throw "Expected 19 scenes, 3 actual popup captures and 2 contact sheets, found $($pngs.Count)" }
           if (!(Test-Path ui-screenshots/manifest.json)) { throw 'Missing screenshot manifest' }
       - name: Upload actual JUCE screenshots and contact sheet
         if: always()

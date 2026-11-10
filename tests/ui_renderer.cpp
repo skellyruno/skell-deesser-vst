@@ -153,6 +153,83 @@ bool contactSheet(const juce::File& directory) {
          ==juce::Colour::fromRGB(12,18,13).getARGB();
 
 }
+
+bool captureActualPopup(SkellyDeEsserAudioProcessorEditor& editor,
+                        const char* anchor,const juce::File& output,
+                        const juce::String& stem) {
+  // Native popup menus are distinct top-level JUCE Components. An offscreen
+  // editor snapshot cannot contain them, so temporarily attach the *real*
+  // editor to the desktop and capture the actual menu window.
+  if(!editor.isOnDesktop())editor.addToDesktop(juce::ComponentPeer::windowIsTemporary);
+  editor.setVisible(true);
+  editor.setBounds(180,140,633,422);
+  juce::PopupMenu::dismissAllActiveMenus();
+  auto& desktop=juce::Desktop::getInstance();
+  const int before=desktop.getNumComponents();
+  if(!click(editor,anchor))return false;
+  #if JUCE_MODAL_LOOPS_PERMITTED
+    if(auto* mm=juce::MessageManager::getInstance())
+      mm->runDispatchLoopUntil(60);
+  #endif
+  juce::Component* popup=nullptr;
+  for(int i=desktop.getNumComponents()-1;i>=0;--i){
+    auto* comp=desktop.getComponent(i);
+    if(comp!=&editor && comp!=nullptr && comp->isVisible()
+       && comp->getWidth()>120 && comp->getHeight()>45){
+      popup=comp;
+      break;
+    }
+  }
+  if(popup==nullptr || desktop.getNumComponents()<=before) {
+    std::fprintf(stderr,"No visible JUCE popup for %s\n",anchor);
+    juce::PopupMenu::dismissAllActiveMenus();
+    return false;
+  }
+  const auto menuImage=popup->createComponentSnapshot(popup->getLocalBounds(),true);
+  const auto editorImage=editor.createComponentSnapshot(editor.getLocalBounds(),true);
+  if(!menuImage.isValid()||!editorImage.isValid()) {
+    juce::PopupMenu::dismissAllActiveMenus();
+    return false;
+  }
+  constexpr int sheetWidth=1120,sheetHeight=740,editorX=180,editorY=90;
+  juce::Image shot(juce::Image::RGB,sheetWidth,sheetHeight,true);
+  {
+    juce::Graphics g(shot);
+    g.fillAll(juce::Colour::fromRGB(5,11,7));
+    g.drawImageAt(editorImage,editorX,editorY);
+    const auto offset=popup->getScreenPosition()-editor.getScreenPosition();
+    g.drawImageAt(menuImage,editorX+offset.x,editorY+offset.y);
+  }
+  const bool saved=skellcore::ui::headless::writePng(
+    shot,output.getChildFile(stem+".png"));
+  juce::PopupMenu::dismissAllActiveMenus();
+  #if JUCE_MODAL_LOOPS_PERMITTED
+    if(auto* mm=juce::MessageManager::getInstance())
+      mm->runDispatchLoopUntil(45);
+  #endif
+  return saved && menuImage.getWidth()>120 && menuImage.getHeight()>45;
+}
+bool popupContactSheet(const juce::File& output) {
+  constexpr int cols=3,w=400,h=300;
+  const std::array<const char*,3> scenes{{"popup-filter","popup-preset","popup-settings"}};
+  juce::Image overview(juce::Image::RGB,cols*w,h,true);
+  {
+    juce::Graphics g(overview);
+    g.fillAll(juce::Colour::fromRGB(5,11,7));
+    for(int i=0;i<cols;++i){
+      auto file=output.getChildFile(juce::String(scenes[(size_t)i])+".png");
+      auto img=juce::ImageFileFormat::loadFrom(file);
+      if(!img.isValid())return false;
+      g.setColour(juce::Colour::fromRGB(164,246,153));
+      g.setFont(juce::Font(juce::FontOptions(17.f)));
+      g.drawText(scenes[(size_t)i],i*w+10,5,w-20,25,juce::Justification::centred);
+      g.drawImageWithin(img,i*w+8,36,w-16,h-44,
+                        juce::RectanglePlacement::centred);
+    }
+  }
+  return skellcore::ui::headless::writePng(
+    overview,output.getChildFile("popup-contact-sheet.png"));
+}
 } // namespace
 
 int main(int argc,char** argv) {
@@ -232,6 +309,20 @@ int main(int argc,char** argv) {
     }
     if(!contactSheet(output)) {
       std::fprintf(stderr,"Could not create contact sheet from actual captures\n");++failures;
+    }
+    for(const auto& menu:std::array<std::pair<const char*,const char*>,3>{{{
+      {"FILTER","popup-filter"},
+      {"A: My Default Preset","popup-preset"},
+      {"MENU","popup-settings"}
+    }}}){
+      if(!captureActualPopup(editor,menu.first,output,menu.second)){
+        std::fprintf(stderr,"Popup capture failed: %s\n",menu.second);
+        ++failures;
+      }
+    }
+    if(!popupContactSheet(output)) {
+      std::fprintf(stderr,"Could not create actual popup contact sheet\n");
+      ++failures;
     }
     std::printf("Skelly DeEsser: %d actual JUCE scenes, %d failures\n",
                 report.captured,failures);
