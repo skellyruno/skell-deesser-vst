@@ -28,7 +28,14 @@ float parameter(SkellyDeEsserAudioProcessor& processor,const char* id) {
   return -12345.f;
 }
 bool click(juce::Component& editor,const char* name) {
-  if(auto* b=findButton(editor,name)){b->triggerClick();return true;}
+  // triggerClick() is async: a headless snapshot is taken before the
+  // queued event executes. Call the actual editor-installed button handler
+  // synchronously so assertions and scene configuration are deterministic.
+  if(auto* b=findButton(editor,name)){
+    if(!b->onClick)return false;
+    b->onClick();
+    return true;
+  }
   return false;
 }
 void setParam(SkellyDeEsserAudioProcessor& processor,const char* id,float physical) {
@@ -58,6 +65,11 @@ int exerciseActualControls(SkellyDeEsserAudioProcessor& processor,
          "Sidechain monitoring button must select detector");
   expect(click(editor,"Audio") && closeTo(parameter(processor,"monitorMode"),0.f),
          "Audio monitoring button must restore processed output");
+  int readouts=0;
+  for(int i=0;i<editor.getNumChildComponents();++i)
+    if(auto* label=dynamic_cast<ReadoutBox*>(editor.getChildComponent(i)))
+      if(label->getText().isNotEmpty())++readouts;
+  expect(readouts==2,"Frequency and threshold readouts must be visible on first frame");
   if(auto* frequency=findControl<SkullKnob>(editor)) {
     frequency->setValue(7300.,juce::sendNotificationSync);
     expect(closeTo(parameter(processor,"frequency"),7300.f),
@@ -116,6 +128,9 @@ bool contactSheet(const juce::File& directory) {
     "medium_phrase","large_split","maximum_split"
   }};
   juce::Image sheet(juce::Image::RGB,cols*cellW,rows*cellH,true);
+  // Complete graphics operations before passing the image to the PNG encoder.
+  // On Windows Direct2D, writes may be deferred until Graphics destruction.
+  {
   juce::Graphics g(sheet);
   g.fillAll(juce::Colour::fromRGB(12,18,13));
   for(size_t i=0;i<ids.size();++i) {
@@ -130,8 +145,13 @@ bool contactSheet(const juce::File& directory) {
     g.drawImageWithin(png,x+8,y+28,cellW-16,cellH-36,
                       juce::RectanglePlacement::centred);
   }
-  return skellcore::ui::headless::writePng(sheet,
-           directory.getChildFile("contact-sheet.png"));
+  }
+  const auto file=directory.getChildFile("contact-sheet.png");
+  if(!skellcore::ui::headless::writePng(sheet,file))return false;
+  const auto saved=juce::ImageFileFormat::loadFrom(file);
+  return saved.isValid() && saved.getPixelAt(0,0).getARGB()
+         ==juce::Colour::fromRGB(12,18,13).getARGB();
+
 }
 } // namespace
 

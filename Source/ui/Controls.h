@@ -56,10 +56,10 @@ public:
    if(std::abs(x-railCentre)<railHalf)continue;
    const float peak=juce::jlimit(0.f,1.f,values[i]);
    if(peak<0.002f)continue;
-   const float amplitude=std::sqrt(peak)*mid*.78f;
-   g.setColour(Theme::mid.withAlpha(.15f));
+   const float amplitude=std::sqrt(peak)*mid*.53f;
+   g.setColour(Theme::mid.withAlpha(.10f));
    g.drawLine(x,mid-amplitude,x,mid+amplitude,2.f);
-   g.setColour(Theme::bright.withAlpha(.31f));
+   g.setColour(Theme::bright.withAlpha(.24f));
    g.drawLine(x,mid-amplitude*.8f,x,mid+amplitude*.8f,1.f);
   }
  }

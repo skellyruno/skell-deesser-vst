@@ -57,6 +57,18 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  threshold.setRange(-60,0,.1);
  frequencyAttach=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(p.apvts,"frequency",frequency);
  thresholdAttach=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(p.apvts,"threshold",threshold);
+ // Headless first-frame capture exposed empty readout boxes before the first
+ // 24Hz timer tick. Keep editable values in sync on the JUCE message thread.
+ frequency.onValueChange=[this]{
+  if(!frequencyValue.isBeingEdited())
+   frequencyValue.setText(juce::String((int)frequency.getValue())+" Hz",juce::dontSendNotification);
+ };
+ threshold.onValueChange=[this]{
+  if(!thresholdValue.isBeingEdited())
+   thresholdValue.setText(juce::String(threshold.getValue(),1)+" dB",juce::dontSendNotification);
+ };
+ frequency.onValueChange();
+ threshold.onValueChange();
  frequencyValue.onTextChange=[this]{
   auto t=frequencyValue.getText().trim().toLowerCase().removeCharacters(" ");
   if(t.endsWith("hz"))t=t.dropLastCharacters(2);
@@ -90,7 +102,11 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  audio.setTooltip("Listen to processed audio.");
  sidechain.setTooltip("Listen to the detector signal to fine-tune frequency.");
  audio.onClick=[this]{setChoice("monitorMode",0);};sidechain.onClick=[this]{setChoice("monitorMode",1);};
- hpf.onClick=[this]{auto*v=processor.apvts.getRawParameterValue("sidechainHpf");setFloat("sidechainHpf",v->load()>.5f?0.f:1.f);};
+ hpf.onClick=[this]{
+  auto*v=processor.apvts.getRawParameterValue("sidechainHpf");
+  setFloat("sidechainHpf",v->load()>.5f?0.f:1.f);
+  updateButtons();repaint();
+ };
  filter.onClick=[this]{juce::PopupMenu m;juce::StringArray names{"Off","HPF 6 dB","HPF 12 dB","Band-Pass","Listen Filter"};
   for(int i=0;i<names.size();++i)m.addItem(i+1,names[i],true,i==(int)processor.apvts.getRawParameterValue("sidechainFilterType")->load());
   auto safe = juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);

@@ -128,3 +128,12 @@ BUILD → RENDER → INSPECT ACTUAL PNGs → FIX → RENDER AGAIN.
 The PNG renderer does not certify OS-level popup menus or DAW-specific
 high-DPI/window behavior; those need separate real-host visual checks.
 The renderer is intentionally not embedded into the released VST3.
+
+### Renderer first-run corrections
+The first real JUCE captures exposed an empty frequency/threshold readout on
+the first frame and an overly strong waveform on the compact UI. The editor
+now initializes both readouts synchronously and follows slider value changes;
+the waveform is quieter, and sidechain HPF selection immediately refreshes.
+The harness invokes the production button `onClick` handler directly because
+`triggerClick()` schedules events asynchronously in a headless message loop.
+The contact sheet renderer now flushes all JUCE drawing before PNG encoding.
