@@ -4,7 +4,7 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Configure
         run: cmake -S . -B build -A x64
       - name: Build
@@ -15,7 +15,7 @@ jobs:
           $plugin = Get-ChildItem build -Directory -Recurse -Filter 'Skelly DeEsser.vst3' | Select-Object -First 1
           if (!$plugin) { throw 'VST3 bundle missing' }
           Compress-Archive -Path $plugin.FullName -DestinationPath SkellyDeEsser-Windows-VST3.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           retention-days: 1
           name: SkellyDeEsser-Windows-VST3
@@ -28,7 +28,7 @@ jobs:
             Select-Object -First 1
           if (!$standalone) { throw 'Standalone executable missing' }
           Compress-Archive -Path $standalone.FullName -DestinationPath SkellyDeEsser-Windows-Standalone.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           retention-days: 1
           name: SkellyDeEsser-Windows-Standalone
@@ -43,13 +43,17 @@ jobs:
           Expand-Archive pluginval_Windows.zip -DestinationPath pluginval_bin -Force
           $validator = Get-ChildItem pluginval_bin -File -Recurse -Filter 'pluginval.exe' | Select-Object -First 1
           if (!$validator) { throw 'pluginval.exe missing from pinned release' }
-          & $validator.FullName --strictness-level 5 $plugin.FullName
-          if ($LASTEXITCODE -ne 0) { throw "pluginval validation failed with $LASTEXITCODE" }
+          # pluginval.exe is a GUI-subsystem executable. PowerShell's &
+          # operator can return early, leaving LASTEXITCODE unset. Wait for
+          # the real process and read its exit code instead.
+          $pluginArg = '"' + $plugin.FullName + '"'
+          $result = Start-Process -FilePath $validator.FullName -ArgumentList @('--strictness-level', '5', $pluginArg) -PassThru -Wait -NoNewWindow
+          if ($result.ExitCode -ne 0) { throw "pluginval validation failed with $($result.ExitCode)" }
 
   dsp-regression:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Run DSP tests with GCC and UBSan
         shell: bash
         run: |
@@ -64,7 +68,7 @@ jobs:
   clang-and-ui:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Clang DSP regressions
         shell: bash
         run: CXX=clang++ bash tests/run_smoke.sh
