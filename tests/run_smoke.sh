@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 CXX="${CXX:-c++}"
-for test in filter_smoke waveform_smoke engine_smoke band_regression engine_regression phrase_aware_regression phrase_gate_regression filter_automation_regression extreme_stress realtime_alloc_stress detector_startup_regression waveform_idle_regression block_partition_regression; do
+for test in filter_smoke waveform_smoke engine_smoke band_regression engine_regression phrase_aware_regression phrase_gate_regression filter_automation_regression extreme_stress realtime_alloc_stress detector_startup_regression waveform_idle_regression block_partition_regression transparent_idle_regression; do
   # This test overrides operator new/delete with malloc/free instrumentation.
   # GCC 15 conservatively warns on the matching delete. Isolate the warning
   # suppression to this ONE test; all other tests retain -Werror.

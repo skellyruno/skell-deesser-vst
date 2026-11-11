@@ -206,6 +206,13 @@ void SkellyDeEsserAudioProcessorEditor::updateButtons(){
  audio.setToggleState(get("monitorMode")<.5f,juce::dontSendNotification);
  sidechain.setToggleState(get("monitorMode")>.5f,juce::dontSendNotification);
  hpf.setToggleState(get("sidechainHpf")>.5f,juce::dontSendNotification);
+ // Communicate the actual detector selection without adding tiny labels to
+ // the 633x422 interface or changing the existing APVTS parameter choices.
+ const juce::StringArray filterNames{"Off","HPF 6 dB","HPF 12 dB","Band-pass","Listen filter"};
+ const int filterIndex=juce::jlimit(0,4,(int)get("sidechainFilterType"));
+ const auto filterTooltip="Detector filter: "+filterNames[filterIndex]
+                        +(get("sidechainHpf")>.5f ? " | HPF on" : " | HPF off");
+ if(filter.getTooltip()!=filterTooltip) filter.setTooltip(filterTooltip);
  const auto text=processor.apvts.state.getProperty("slot","A").toString()+": "+
                       processor.apvts.state.getProperty("presetName","My Default Preset").toString();
  if(preset.getButtonText()!=text)preset.setButtonText(text);

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(SkellyDeEsser VERSION 1.12.0 LANGUAGES C CXX)
+project(SkellyDeEsser VERSION 1.14.0 LANGUAGES C CXX)
 include(FetchContent)
 if(DEFINED JUCE_PATH AND EXISTS "${JUCE_PATH}/CMakeLists.txt")
   add_subdirectory("${JUCE_PATH}" JUCE)
@@ -8,7 +8,7 @@ else()
   FetchContent_MakeAvailable(JUCE)
 endif()
 juce_add_plugin(SkellyDeEsser COMPANY_NAME "Skelly Audio" BUNDLE_ID "audio.skelly.deesser"
- PLUGIN_MANUFACTURER_CODE SkAu PLUGIN_CODE SkDs FORMATS VST3 Standalone
+ PLUGIN_MANUFACTURER_CODE SkAu PLUGIN_CODE SkDs FORMATS VST3
  PRODUCT_NAME "Skelly DeEsser" IS_SYNTH FALSE NEEDS_MIDI_INPUT FALSE NEEDS_MIDI_OUTPUT FALSE
  IS_MIDI_EFFECT FALSE COPY_PLUGIN_AFTER_BUILD FALSE)
 juce_generate_juce_header(SkellyDeEsser)
@@ -24,8 +24,8 @@ target_compile_definitions(SkellyDeEsser PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CUR
 target_link_libraries(SkellyDeEsser PRIVATE SkellyArt juce::juce_audio_utils juce::juce_audio_processors juce::juce_gui_extra)
 
 
-# Development-only real-JUCE-editor screenshot harness. The VST3 and Standalone
-# do not link SkellCore or carry renderer code. Pin upstream, never track main.
+# Development-only real-JUCE-editor screenshot harness. The shipped VST3
+# does not link SkellCore or carry renderer code. Pin upstream, never track main.
 option(SKELLY_DEESSER_BUILD_UI_RENDERER "Build real editor SkellCore PNG capture tool" OFF)
 if(SKELLY_DEESSER_BUILD_UI_RENDERER)
   if(DEFINED SKELLCORE_PATH AND EXISTS "${SKELLCORE_PATH}/CMakeLists.txt")

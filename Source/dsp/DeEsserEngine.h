@@ -165,13 +165,16 @@ public:
       +(1.0-smoothing)*targetPhraseReduction;
     maxReduction=std::max(maxReduction,reduction*(1.0-phraseBlend)
                           +phraseReduction[(size_t)c]*phraseBlend);
-    const double gain=std::pow(10.0,-reduction/20.0);
+    // Exact unity is common on vocals: avoid costly gain conversion for
+    // samples requiring no attenuation. Dry output remains sample-identical.
+    const double gain=reduction>0.0 ? std::pow(10.0,-reduction/20.0) : 1.0;
     // Parallel subtraction: 0 dB GR is EXACT dry, even while sweeping cutoff.
     // The complementary splitter guarantees mid+low+high = input each sample.
     const double sibilance=band[c].process(input[c]);
     const double split=input[c]+(gain-1.0)*sibilance;
     const double wide=input[c]*gain;
-    const double phraseGain=std::pow(10.0,-phraseReduction[(size_t)c]/20.0);
+    const double phraseGain=phraseReduction[(size_t)c]>0.0
+      ? std::pow(10.0,-phraseReduction[(size_t)c]/20.0) : 1.0;
     const double phraseSplit=input[c]+(phraseGain-1.0)*sibilance;
     // Two independent smoothed controls may transition simultaneously (e.g.
     // host automates Split->Wide while enabling Phrase). Use a convex mix so

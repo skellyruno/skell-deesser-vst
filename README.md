@@ -139,3 +139,10 @@ The harness invokes the production button `onClick` handler directly because
 The contact sheet renderer now flushes all JUCE drawing before PNG encoding.
 
 See [UI_POLISH_V13.md](UI_POLISH_V13.md) for the compact knob, value-editing, popup-menu and accessibility polish pass.
+
+## V14 Windows VST3-only distribution
+
+Skelly DeEsser now ships **Windows VST3 only**. The normal CMake project
+creates no Standalone application. The SkellCore screenshot renderer remains
+an optional development executable, not a customer deliverable. GitHub Actions
+uploads only the Windows VST3 package. See [V14_ENGINEERING_NOTES.md](V14_ENGINEERING_NOTES.md).
