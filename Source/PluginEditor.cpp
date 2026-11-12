@@ -359,7 +359,7 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
  presets.addItem(2,"Copy A to B");
  m.addSubMenu("Preset actions",presets);
  m.addSeparator();
- m.addItem(9,"About Skelly DeEsser V15");
+ m.addItem(9,"About Skelly DeEsser");
  const auto safe=juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
  m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&settings)
                   .withMinimumWidth(240).withMaximumNumColumns(1),[safe](int r){
@@ -374,7 +374,7 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
    return;
   }
   if(r==9){
-   juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,"Skelly DeEsser V15",
+   juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,"Skelly DeEsser",
     "Gothic stereo de-esser. Split, Wide and Phrase-Aware, zero reported latency, and host automation.");
    return;
   }
@@ -496,11 +496,10 @@ void SkellyDeEsserAudioProcessorEditor::resized(){
  place(detectHeader,95,253,287,43);
  place(split,117,312,244,48);place(wide,117,368,244,48);
  place(phraseButton,117,424,244,48);
- place(frequencyHeader,95,488,287,42);
- // A larger hardware knob that is legible at the 594x396 launch size.
- // Vertical rhythm is checked against the readout and bottom filter controls.
- place(frequency,140,534,200,166);
- place(frequencyValue,131,704,216,42);
+ place(frequencyHeader,95,482,287,42);
+ // Enlarged hardware knob with extra breathing room below the number field.
+ place(frequency,140,528,200,166);
+ place(frequencyValue,131,698,216,42);
  place(sideHeader,95,751,287,32);
  place(hpf,130,788,179,43);place(filter,317,788,48,43);
 

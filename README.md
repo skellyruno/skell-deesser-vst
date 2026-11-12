@@ -238,3 +238,12 @@ component is now enlarged by roughly 37% in reference width and 29% in
 reference height, with vertically aligned number box, sidechain heading,
 HP/BP control and popup arrow. Geometry tests check each separation to prevent
 the earlier decorative-border clipping. Audio/preset/automation logic unchanged.
+
+### V17.2 final popup/readout corrections
+
+The real JUCE popup capture exposed the old "V15" string in Settings/About.
+The menu now uses the timeless "About Skelly DeEsser" title so the displayed
+version can never lag a build. The left frequency row moves up six reference
+pixels to give the 594×396 numeric box more breathing room above SIDECHAIN.
+This is UI-only; VST3 identity, automation, presets, CPU/DSP and latency are
+unchanged from the tested V17.1 build.

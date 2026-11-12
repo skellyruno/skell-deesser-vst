@@ -16,6 +16,7 @@ assert 'phraseButton.setToggleState(phraseOn' in editor
 assert 'phraseAware' in processor and 'phraseSensitivity' in processor
 assert 'title(g,"THRESHOLD"' in editor
 assert 'title(g,"INPUT ENVELOPE"' in editor and 'title(g,"LIVE SIBILANCE"' not in editor
+assert 'About Skelly DeEsser V15' not in editor and 'About Skelly DeEsser"' in editor
 assert 'r*.94f' in look and 'r*1.15f' in look  # detached rotary index marker
 assert 'title(g,"1 kHz"' not in editor and 'title(g,"20 kHz"' not in editor, "knob end labels overlap readout"
 assert 'g.drawFittedText("SIDECHAIN"' in editor
