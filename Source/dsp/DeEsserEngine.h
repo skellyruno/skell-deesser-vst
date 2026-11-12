@@ -175,13 +175,17 @@ public:
                           +phraseReduction[(size_t)c]*phraseBlend);
     // Exact unity is common on vocals: avoid costly gain conversion for
     // samples requiring no attenuation. Dry output remains sample-identical.
-    const double gain=reduction>0.0 ? std::pow(10.0,-reduction/20.0) : 1.0;
+    // Exactly in Phrase mode the conventional attenuation is inaudible.
+    // Likewise, with Phrase blend at zero its reduction need not be
+    // exponentiated. Preserve both detector and filter states throughout.
+    const double gain=(phraseBlend<1.0 && reduction>0.0)
+      ? std::pow(10.0,-reduction/20.0) : 1.0;
     // Parallel subtraction: 0 dB GR is EXACT dry, even while sweeping cutoff.
     // The complementary splitter guarantees mid+low+high = input each sample.
     const double sibilance=band[c].process(input[c]);
     const double split=input[c]+(gain-1.0)*sibilance;
     const double wide=input[c]*gain;
-    const double phraseGain=phraseReduction[(size_t)c]>0.0
+    const double phraseGain=(phraseBlend>0.0 && phraseReduction[(size_t)c]>0.0)
       ? std::pow(10.0,-phraseReduction[(size_t)c]/20.0) : 1.0;
     const double phraseSplit=input[c]+(phraseGain-1.0)*sibilance;
     // Two independent smoothed controls may transition simultaneously (e.g.

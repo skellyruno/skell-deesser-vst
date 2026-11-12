@@ -152,9 +152,19 @@ public:
   g.setColour(Theme::value);
   g.fillEllipse(cx+std::cos(current)*r*1.16f-r*.065f,
                 cy+std::sin(current)*r*1.16f-r*.065f,r*.13f,r*.13f);
-  g.setColour(juce::Colour::fromRGB(12,22,14));g.fillEllipse(cx-r*.9f,cy-r*.9f,r*1.8f,r*1.8f);
-  g.setColour(Theme::bright);g.drawEllipse(cx-r*.9f,cy-r*.9f,r*1.8f,r*1.8f,1.2f);
-  if(knobImage.isValid())g.drawImage(knobImage,cx-r*.9f,cy-r*.9f,r*1.8f,r*1.8f,0,0,knobImage.getWidth(),knobImage.getHeight());
+  // Weight and depth from a physical metal bezel. The brand skull sits
+  // inside the knob; its moving indicator stays OUTSIDE the artwork.
+  g.setColour(juce::Colour::fromRGB(1,5,3));
+  g.fillEllipse(cx-r*.97f,cy-r*.95f,r*1.94f,r*1.94f);
+  juce::ColourGradient bezel(juce::Colour::fromRGB(111,124,110),cx-r,cy-r,
+                              juce::Colour::fromRGB(12,31,17),cx+r,cy+r,false);
+  g.setGradientFill(bezel);
+  g.fillEllipse(cx-r*.91f,cy-r*.91f,r*1.82f,r*1.82f);
+  g.setColour(juce::Colour::fromRGB(5,16,8));
+  g.fillEllipse(cx-r*.79f,cy-r*.79f,r*1.58f,r*1.58f);
+  g.setColour(Theme::neon.withAlpha(.58f));
+  g.drawEllipse(cx-r*.78f,cy-r*.78f,r*1.56f,r*1.56f,juce::jmax(1.f,r*.022f));
+  if(knobImage.isValid())g.drawImage(knobImage,cx-r*.69f,cy-r*.69f,r*1.38f,r*1.38f,0,0,knobImage.getWidth(),knobImage.getHeight());
   else {
    // Draw a simple vector skull if artwork is missing (no unsupported font glyphs).
    g.setColour(Theme::value);g.fillEllipse(cx-r*.54f,cy-r*.6f,r*1.08f,r*.94f);
@@ -164,14 +174,15 @@ public:
    g.fillEllipse(cx+r*.12f,cy-r*.31f,r*.27f,r*.30f);
    g.fillRect(cx-r*.08f,cy+r*.10f,r*.16f,r*.18f);
   }
-  // The center skull artwork stays fixed, while the pointer genuinely rotates.
+  // A short, rotating metal index mark reads at 594px without crossing
+  // the skull's face, unlike the previous bright diagonal slash.
   const float theta=start+(end-start)*prop;
-  const auto p1=juce::Point<float>(cx+std::cos(theta)*r*.20f,cy+std::sin(theta)*r*.20f);
-  const auto p2=juce::Point<float>(cx+std::cos(theta)*r*.82f,cy+std::sin(theta)*r*.82f);
+  const auto p1=juce::Point<float>(cx+std::cos(theta)*r*.94f,cy+std::sin(theta)*r*.94f);
+  const auto p2=juce::Point<float>(cx+std::cos(theta)*r*1.15f,cy+std::sin(theta)*r*1.15f);
+  g.setColour(Theme::value);
+  g.drawLine(juce::Line<float>(p1,p2),juce::jmax(1.7f,r*.041f));
   g.setColour(Theme::bright);
-  g.drawLine(juce::Line<float>(p1,p2),juce::jmax(1.8f,w*.025f));
-  g.setColour(Theme::neon);
-  g.fillEllipse(p2.x-2.f,p2.y-2.f,4.f,4.f);
+  g.fillEllipse(p2.x-r*.045f,p2.y-r*.045f,r*.09f,r*.09f);
  }
 private:
  juce::Image knobImage,capImage;

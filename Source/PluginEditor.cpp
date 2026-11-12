@@ -408,14 +408,17 @@ void SkellyDeEsserAudioProcessorEditor::paint(juce::Graphics&g){
 
  // Studio layout: the visual hierarchy is controls -> live signal -> threshold.
  // The skull and original metal frame remain untouched around the workspace.
- g.setColour(Theme::neon);
- g.setFont(Theme::font(56.f,true,false));
- g.drawFittedText("SKELLY",{80,70,280,68},juce::Justification::centredLeft,1);
- g.setColour(Theme::label);
+ // White brand name / green plugin identity, legible inside the ornate crown.
+ g.setColour(juce::Colour::fromRGB(227,243,229));
+ g.setFont(Theme::font(54.f,true,false));
+ g.drawFittedText("SKELLY",{80,72,280,65},juce::Justification::centredLeft,1);
+ g.setColour(Theme::bright);
  g.setFont(Theme::font(22.f,true));
- g.drawFittedText("DE-ESSER",{97,139,248,27},juce::Justification::centredLeft,1);
+ g.drawFittedText("DE-ESSER",{95,141,250,27},juce::Justification::centredLeft,1);
 
- title(g,"LIVE SIBILANCE",{481,255,580,41},27);
+ // WaveformHistory contains raw input peaks, NOT the de-esser detector.
+ // Label the measurement accurately; sidechain and gain reduction are below.
+ title(g,"INPUT ENVELOPE",{481,255,580,41},27);
  title(g,"THRESHOLD",{1173,255,232,41},27);
  Theme::line(g,470.f,311.f,1081.f,311.f,.55f);
  Theme::line(g,1175.f,311.f,1416.f,311.f,.48f);

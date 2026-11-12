@@ -66,8 +66,19 @@ public:
   const float w=(float)getWidth(),mid=getHeight()*.5f;
   if(w<=0.f || mid<=0.f)return;
   const float scale=w/1064.f;
+  // Low-contrast scope grid improves depth and shows the REAL input envelope.
+  // Grid drawing is entirely on the message thread; no audio-thread work.
+  g.setColour(Theme::mid.withAlpha(.065f));
+  for(int i=1;i<8;++i) {
+   const auto x=w*i/8.f;
+   g.drawLine(x,0.f,x,(float)getHeight(),1.f);
+  }
+  for(int i=1;i<4;++i) {
+   const auto y=getHeight()*i/4.f;
+   g.drawLine(0.f,y,w,y,1.f);
+  }
   // Preserve a faint zero baseline during silence; never draw a fake signal.
-  g.setColour(Theme::mid.withAlpha(.11f));
+  g.setColour(Theme::mid.withAlpha(.16f));
   g.drawLine(0.f,mid,w,mid,1.f);
   // Temporal smoothing is VISUAL only: the actual detector and waveform
   // history remain unchanged. Five-point weighted peaks remove harsh
@@ -111,9 +122,9 @@ public:
     for(int i=end-1;i>=begin;--i)
       envelope.lineTo(w*(i+.5f)/values.size(),mid+heights[(size_t)i]);
     envelope.closeSubPath();
-    g.setColour(Theme::mid.withAlpha(.13f));
+    g.setColour(Theme::mid.withAlpha(.10f));
     g.fillPath(envelope);
-    g.setColour(Theme::bright.withAlpha(.48f));
+    g.setColour(Theme::bright.withAlpha(.57f));
     g.strokePath(outline,juce::PathStrokeType(1.f));
   };
   drawSegment(0,cutLeft);

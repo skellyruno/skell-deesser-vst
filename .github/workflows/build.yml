@@ -45,7 +45,7 @@ jobs:
         shell: bash
         run: |
           CXX=g++ bash tests/run_smoke.sh
-          for test in filter_smoke waveform_smoke engine_smoke band_regression engine_regression phrase_aware_regression phrase_gate_regression filter_automation_regression extreme_stress realtime_alloc_stress detector_startup_regression waveform_idle_regression block_partition_regression transparent_idle_regression quiet_detector_regression; do
+          for test in filter_smoke waveform_smoke engine_smoke band_regression engine_regression phrase_aware_regression phrase_gate_regression filter_automation_regression extreme_stress realtime_alloc_stress detector_startup_regression waveform_idle_regression block_partition_regression transparent_idle_regression quiet_detector_regression gain_blend_regression; do
             extra=()
             if [[ "$test" == "realtime_alloc_stress" ]]; then extra+=(-Wno-mismatched-new-delete); fi
             g++ -std=c++17 -O1 -g -fsanitize=undefined -fno-sanitize-recover=all "${extra[@]}" -Itests/juce_stub "tests/${test}.cpp" -o "/tmp/skelly_ubsan_${test}"

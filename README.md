@@ -213,3 +213,19 @@ inner divider, while keeping the outer chain/skull intact. The bright
 right-hand threshold rail now follows the actual threshold setpoint; true
 SC dBFS and gain reduction remain in the central live status strip.
 No parameter, preset, DSP or VST3 compatibility changes.
+
+## V17 control-surface and DSP refinement
+
+- Corrects the center label to **INPUT ENVELOPE**: the JUCE waveform history is
+  the dry input peak envelope, not a spectral sibilance detector display.
+- Frequency knob has a shaded metal rim, smaller skull center and moving outer
+  index, rather than a white pointer running across the skull art.
+- Adds an extremely subtle scope grid and reduces opaque waveform fill.
+- Light neutral SKELLY wordmark and bright-green DE-ESSER preserve the shared
+  Skelly typographic hierarchy without recoloring the Gothic frame.
+- The conventional gain exponential is skipped when fully in Phrase mode, and
+  the adaptive gain exponential is skipped when fully in conventional mode.
+  Gain shaping and crossfade equations are unchanged. Regression covers 78,400
+  extreme reductions, signal polarities, and automation blend combinations.
+- All plugin identity, preset serialization and automation IDs are untouched;
+  Windows VST3 is still the only shipping format.
