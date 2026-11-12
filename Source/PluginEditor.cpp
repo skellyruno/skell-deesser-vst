@@ -37,6 +37,24 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
   }
   art.setColour(Theme::black.withAlpha(0.69f));
   art.fillRoundedRectangle(66.f,211.f,218.f,634.f,7.f);
+  // V16 Studio layout: three recessed hardware modules instead of one
+  // oversized empty analyzer. Cached once, so no extra idle-frame work.
+  const juce::Rectangle<float> modules[] = {
+   {72.f,224.f,336.f,614.f}, {425.f,224.f,694.f,614.f},
+   {1138.f,224.f,316.f,614.f}
+  };
+  for(const auto& rect:modules) {
+   juce::ColourGradient surface(
+    juce::Colour::fromRGB(12,24,16).withAlpha(.96f),rect.getCentreX(),rect.getY(),
+    juce::Colour::fromRGB(3,11,7).withAlpha(.97f),rect.getCentreX(),rect.getBottom(),false);
+   art.setGradientFill(surface);
+   art.fillRoundedRectangle(rect,12.f);
+   art.setColour(Theme::mid.withAlpha(.48f));
+   art.drawRoundedRectangle(rect.reduced(1.f),11.f,1.5f);
+   art.setColour(juce::Colours::white.withAlpha(.035f));
+   art.drawHorizontalLine(juce::roundToInt(rect.getY()+8),rect.getX()+15.f,rect.getRight()-15.f);
+  }
+  // Keep subtle original texture in the signal module only.
   // One emblem only. The frame PNG already contains the center skull.
   // An additional large skull was causing double edges and visual clutter.
   {
@@ -46,6 +64,7 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
   }
  }
  look.setArt(knobArt,capArt);
+ waveform.setCentreGapEnabled(false);
  setLookAndFeel(&look);
  for(auto* c:{(juce::Component*)&frequency,(juce::Component*)&threshold,(juce::Component*)&frequencyValue,(juce::Component*)&thresholdValue,
   (juce::Component*)&split,(juce::Component*)&wide,(juce::Component*)&phraseButton,(juce::Component*)&audio,(juce::Component*)&sidechain,
@@ -370,111 +389,115 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
 void SkellyDeEsserAudioProcessorEditor::paint(juce::Graphics&g){
  const float sx=getWidth()/1536.f,sy=getHeight()/1024.f;
  g.addTransform(juce::AffineTransform::scale(sx,sy));
- // All layered gothic artwork is composited in staticBackdrop at construction.
- if(staticBackdrop.isValid())
-  draw(g,staticBackdrop,0,0,1536,1024);
+ if(staticBackdrop.isValid())draw(g,staticBackdrop,0,0,1536,1024);
  else g.fillAll(Theme::black);
 
- // All labels, meter graphics and user controls remain dynamic and sharp.
- // Quiet recessed rails reinforce the layout without covering the waveform.
- g.setColour(juce::Colour::fromRGB(5,18,9).withAlpha(.69f));
- g.fillRoundedRectangle(891.f,779.f,556.f,58.f,9.f);
- g.setColour(Theme::mid.withAlpha(.55f));
- g.drawRoundedRectangle(891.f,779.f,556.f,58.f,9.f,1.25f);
- g.setColour(Theme::neon.withAlpha(.12f));
- g.setFont(Theme::font(60,true,false));
- g.drawText("SKELLY",78,64,292,76,juce::Justification::centredLeft);
+ // Studio layout: the visual hierarchy is controls -> live signal -> threshold.
+ // The skull and original metal frame remain untouched around the workspace.
  g.setColour(Theme::neon);
- g.setFont(Theme::font(58,true,false));
- g.drawText("SKELLY",82,60,292,76,juce::Justification::centredLeft);
- title(g,"DE-ESSER",{104,136,220,28},21);
- title(g,"THRESHOLD",{676,245,191,42},28);
- // This rail is sidechain level; the separate LED strip is gain reduction.
- g.setColour(Theme::label.withAlpha(.8f));
- g.setFont(Theme::font(23,true));
- g.drawFittedText("SC LEVEL",{900,289,148,27},juce::Justification::centred,1);
- Theme::line(g,576,267,678,267,.65f);
- Theme::line(g,866,267,965,267,.65f);
+ g.setFont(Theme::font(56.f,true,false));
+ g.drawFittedText("SKELLY",{80,70,280,68},juce::Justification::centredLeft,1);
+ g.setColour(Theme::label);
+ g.setFont(Theme::font(22.f,true));
+ g.drawFittedText("DE-ESSER",{97,139,248,27},juce::Justification::centredLeft,1);
 
- // The threshold cap is a real slider child. Only the live sidechain meter and
- // housing are painted here; the cap is then rendered above by LookAndFeel.
- draw(g,faderArt,729,296,80,480);
+ title(g,"LIVE SIBILANCE",{481,255,580,41},27);
+ title(g,"THRESHOLD",{1173,255,232,41},27);
+ Theme::line(g,470.f,311.f,1081.f,311.f,.55f);
+ Theme::line(g,1175.f,311.f,1416.f,311.f,.48f);
+
+ // The live waveform is rendered by the real WaveformBackdrop child, not
+ // synthetic graphics; its old central hole has been removed.
+ g.setColour(Theme::mid.withAlpha(.14f));
+ g.fillRoundedRectangle(475.f,330.f,596.f,295.f,9.f);
+ g.setColour(Theme::mid.withAlpha(.40f));
+ g.drawRoundedRectangle(475.f,330.f,596.f,295.f,9.f,1.5f);
+
+ // Dynamic sidechain meter, now on the right in a dedicated fader panel.
+ draw(g,faderArt,1211,346,82,414);
  const float sideDb=juce::jlimit(-60.f,0.f,processor.engine.sidechainLevelDb.load());
  const float fill=juce::jlimit(0.f,1.f,(sideDb+60.f)/60.f);
- constexpr float channelX=753.f,channelW=30.f,top=314.f,bottom=755.f;
- const float fillHeight=(bottom-top)*fill;
- g.setColour(Theme::black.withAlpha(.52f));
- g.fillRoundedRectangle(channelX,top,channelW,bottom-top,3.f);
- if(fillHeight>0.3f){
-  g.setColour(Theme::neon.withAlpha(.21f));
-  g.fillRoundedRectangle(channelX-3.f,bottom-fillHeight,channelW+6.f,fillHeight,4.f);
-  juce::ColourGradient grad(juce::Colour::fromRGB(182,255,42),768.f,bottom-fillHeight,
-                            Theme::neon,768.f,bottom,false);
-  g.setGradientFill(grad);
-  g.fillRoundedRectangle(channelX,bottom-fillHeight,channelW,fillHeight,2.f);
+ constexpr float meterX=1238.f,meterW=27.f,meterTop=361.f,meterBottom=729.f;
+ const float meterHeight=(meterBottom-meterTop)*fill;
+ g.setColour(Theme::black.withAlpha(.68f));
+ g.fillRoundedRectangle(meterX,meterTop,meterW,meterBottom-meterTop,4.f);
+ if(meterHeight>.1f) {
+  juce::ColourGradient gradient(juce::Colour::fromRGB(189,255,55),
+    meterX,meterBottom-meterHeight,Theme::neon,meterX,meterBottom,false);
+  g.setGradientFill(gradient);
+  g.fillRoundedRectangle(meterX,meterBottom-meterHeight,meterW,meterHeight,3.f);
  }
- for(int i=0;i<=30;++i){
-  const float y=310.f+i*(445.f/30.f);
-  Theme::line(g,i%5?812.f:808.f,y,i%5?819.f:827.f,y,i%5?.45f:.90f);
-  if(i%5==0)title(g,juce::String(-2*i),{830,(int)y-14,63,27},22);
- }
- // The 1/20 kHz labels overlapped the readout in the compact layout.
- // The knob tooltip specifies its range, and the actual value stays visible.
-
- const auto reduction=juce::jmax(0.f,processor.engine.gainReductionDb.load());
- // Separate 24 dB gain-reduction LED meter; the tall central meter is SC level.
- // The separate meter prevents users confusing detector level and actual GR.
- constexpr float grX=1180.f,grY=773.f,grWidth=260.f;
- for(int seg=0;seg<24;++seg){
-  const auto rect=juce::Rectangle<float>(grX+seg*(grWidth/24.f),grY,8.6f,14.f);
-  const bool active=reduction >= (float)(seg+1);
-  g.setColour(active ? (seg<12 ? Theme::neon : juce::Colour::fromRGB(191,255,54)) : Theme::dim.withAlpha(.52f));
-  g.fillRoundedRectangle(rect,2.f);
- }
- // A compact, actual detector-state readout (never a simulated waveform
- // or an invented "AI" confidence value). Only visible in Phrase mode.
- if (processor.apvts.getRawParameterValue("phraseAware")->load(std::memory_order_relaxed) > .5f) {
-  const auto events=processor.engine.phraseLearnedEvents.load(std::memory_order_relaxed);
-  const auto baseline=processor.engine.phraseBaselineDb.load(std::memory_order_relaxed);
-  juce::String msg="PHRASE  |  LEARNING";
-  if (events>0)
-   msg="PHRASE  |  NORMAL " + juce::String(baseline,1) + " dBFS  |  "
-       + juce::String(events) + " EVENTS";
-  g.setColour(Theme::bright.withAlpha(.78f));
-  g.setFont(Theme::font(25,true));
-  g.drawFittedText(msg,{932,729,506,38},juce::Justification::centredRight,1);
- }
- // Readouts stay on separate unobstructed lines near the bottom of the stage.
  g.setColour(Theme::label);
- g.setFont(Theme::font(24,true));
- g.drawFittedText("SC  " + juce::String(sideDb,1) + " dBFS",
-                  {917,792,220,43},juce::Justification::centredRight,1);
- Theme::line(g,1158,799,1158,830,.35f);
- g.setColour(reduction>.05f?Theme::bright:Theme::label);
- g.drawFittedText("GR  " + juce::String(reduction,1) + " dB",
-                  {1191,792,241,43},juce::Justification::centredLeft,1);
-}
+ for(int i=0;i<=6;++i) {
+  const float y=meterTop+i*(meterBottom-meterTop)/6.f;
+  Theme::line(g,1314.f,y,1328.f,y,.65f);
+  g.setFont(Theme::font(22.f,true));
+  g.drawFittedText(juce::String(-10*i),{1337,juce::roundToInt(y)-15,64,29},
+                   juce::Justification::centredLeft,1);
+ }
 
+ // Recessed, readable SC/GR section uses existing DSP atomic meter values.
+ const float gr=juce::jmax(0.f,processor.engine.gainReductionDb.load());
+ g.setColour(Theme::mid.withAlpha(.42f));
+ g.drawRoundedRectangle(688.f,695.f,387.f,128.f,10.f,1.2f);
+ g.setColour(Theme::label);
+ g.setFont(Theme::font(21.f,true));
+ g.drawFittedText("SIDECHAIN",{708,711,157,31},juce::Justification::centredLeft,1);
+ g.drawFittedText("GAIN REDUCTION",{876,711,184,31},juce::Justification::centredRight,1);
+ g.setColour(Theme::value);
+ g.setFont(Theme::font(25.f,true));
+ g.drawFittedText(juce::String(sideDb,1)+" dBFS",{703,743,162,37},juce::Justification::centredLeft,1);
+ g.drawFittedText(juce::String(gr,1)+" dB",{876,743,186,37},juce::Justification::centredRight,1);
+ for(int i=0;i<24;++i) {
+  const bool lit=gr>=i+1;
+  g.setColour(lit?Theme::bright:Theme::dim.withAlpha(.50f));
+  g.fillRoundedRectangle(703.f+i*15.f,795.f,11.f,10.f,1.7f);
+ }
+
+ const bool phraseOn=processor.apvts.getRawParameterValue("phraseAware")->load(std::memory_order_relaxed)>.5f;
+ if(phraseOn) {
+  const int n=processor.engine.phraseLearnedEvents.load(std::memory_order_relaxed);
+  const float baseline=processor.engine.phraseBaselineDb.load(std::memory_order_relaxed);
+  const juce::String status=n>0
+   ? "PHRASE LEARNED  "+juce::String(n)+"  /  "+juce::String(baseline,1)+" dBFS"
+   : "PHRASE LEARNING";
+  g.setColour(Theme::bright.withAlpha(.84f));
+  g.setFont(Theme::font(21.f,true));
+  g.drawFittedText(status,{490,638,550,35},juce::Justification::centred,1);
+ }
+}
 void SkellyDeEsserAudioProcessorEditor::resized(){
- const auto sx=getWidth()/1536.f,sy=getHeight()/1024.f;
- auto place=[sx,sy](juce::Component&c,int x,int y,int w,int h){c.setBounds(juce::roundToInt(x*sx),juce::roundToInt(y*sy),juce::roundToInt(w*sx),juce::roundToInt(h*sy));};
- place(detectHeader,76,211,209,41);
- place(split,91,259,178,32);place(wide,91,294,178,32);place(phraseButton,91,329,178,32);
- // Keep both monitor buttons within the inner gothic panel (ends near y=850).
- // This column is grouped more tightly without shrinking the knob labels.
- place(frequencyHeader,76,365,209,37);place(frequency,104,406,150,125);
- place(frequencyValue,100,536,158,37);place(sideHeader,76,583,209,35);
- place(hpf,89,629,122,48);place(filter,220,629,52,48);
- place(monitorHeader,76,694,209,35);place(audio,89,738,183,44);
- place(sidechain,89,788,183,44);
- place(waveform,397,316,1064,418);waveform.toBack();
- place(threshold,710,304,116,464);place(thresholdValue,684,783,168,49);
- // Compact preset header with the right-side metal border unobstructed.
+ const float sx=getWidth()/1536.f,sy=getHeight()/1024.f;
+ auto place=[sx,sy](juce::Component& c,int x,int y,int w,int h){
+  c.setBounds(juce::roundToInt(x*sx),juce::roundToInt(y*sy),
+              juce::roundToInt(w*sx),juce::roundToInt(h*sy));
+ };
+ // Left: genuine three-mode de-essing, an accessible frequency knob and HP/BP.
+ place(detectHeader,95,253,287,43);
+ place(split,117,312,244,48);place(wide,117,368,244,48);
+ place(phraseButton,117,424,244,48);
+ place(frequencyHeader,95,488,287,42);
+ place(frequency,166,537,146,129);
+ place(frequencyValue,131,675,216,48);
+ place(sideHeader,95,741,287,37);
+ place(hpf,130,785,179,43);place(filter,317,785,48,43);
+
+ // Centre: complete, unobstructed signal history and compact monitoring.
+ place(waveform,482,338,581,280);waveform.toBack();
+ place(monitorHeader,486,691,184,39);
+ place(audio,487,736,179,44);place(sidechain,487,787,179,41);
+
+ // Right: independent threshold/level rail, separated from waveform.
+ place(threshold,1193,345,116,424);
+ place(thresholdValue,1187,782,174,47);
+
+ // Preserve established preset navigation with a little right-side clearance.
  place(prev,1026,128,50,54);place(preset,1080,128,276,54);
- place(next,1360,128,50,54);place(save,1414,128,38,54);place(settings,1456,128,36,54);
- const auto textPx=juce::jmax(10.f,24.f*sy);
+ place(next,1360,128,50,54);place(save,1414,128,38,54);
+ place(settings,1456,128,36,54);
+ const float textPx=juce::jmax(10.f,26.f*sy);
  frequencyValue.setFont(Theme::font(textPx,true));
- thresholdValue.setFont(Theme::font(juce::jmax(11.f,28.f*sy),true));
+ thresholdValue.setFont(Theme::font(juce::jmax(11.f,29.f*sy),true));
  processor.apvts.state.setProperty("editorWidth",getWidth(),nullptr);
  processor.apvts.state.setProperty("editorHeight",getHeight(),nullptr);
 }

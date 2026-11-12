@@ -59,6 +59,7 @@ class ThresholdFader:public juce::Slider {public:ThresholdFader(){setSliderStyle
 class WaveformBackdrop:public juce::Component {
 public:
  explicit WaveformBackdrop(const WaveformHistory& h):history(h){setInterceptsMouseClicks(false,false);}
+ void setCentreGapEnabled(bool enabled) {centreGap=enabled;repaint();}
  void paint(juce::Graphics& g) override {
   std::array<float, WaveformHistory::length> values{};
   history.copy(values.data(), static_cast<unsigned>(values.size()));
@@ -80,12 +81,16 @@ public:
                          +2.f*peak(i+1)+peak(i+2))/9.f;
     heights[(size_t)i]=std::sqrt(smoothed)*mid*.53f;
   }
-  // Two independent segments leave the threshold rail and skull fader clear.
+  // Legacy layout left a hole where the fader crossed the waveform.
+  // Studio layout places the fader in its own module, so render the entire
+  // measured signal. This affects drawing only, never signal processing.
   const float railCentre=371.f*scale,railHalf=92.f*scale;
-  const int cutLeft=juce::jlimit(0,(int)values.size(),
-                 (int)std::floor((railCentre-railHalf)/w*values.size()));
-  const int cutRight=juce::jlimit(0,(int)values.size(),
-                  (int)std::ceil((railCentre+railHalf)/w*values.size()));
+  const int cutLeft=centreGap ? juce::jlimit(0,(int)values.size(),
+                    (int)std::floor((railCentre-railHalf)/w*values.size()))
+                    : (int)values.size();
+  const int cutRight=centreGap ? juce::jlimit(0,(int)values.size(),
+                     (int)std::ceil((railCentre+railHalf)/w*values.size()))
+                     : (int)values.size();
   auto drawSegment=[&](int begin,int end) {
     if(end-begin<2)return;
     float maximum=0.f;
@@ -117,6 +122,7 @@ public:
  void advance(){repaint();}
 private:
  const WaveformHistory& history;
+ bool centreGap=true;
 };
 class PresetBar:public juce::Component {
 public:

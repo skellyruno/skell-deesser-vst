@@ -191,3 +191,15 @@ the original log-based calculation for every valid Threshold across all
 Ratio/Range extremes, and the regular DSP, sanitizer, realtime-allocation,
 buffer-partition, and Windows pluginval tests continue to gate the change.
 No change to latency, host IDs, stored preset format or UI geometry.
+
+## V16 Studio UI layout
+
+The existing gothic artwork stays as a frame, but the actual JUCE editor is
+reorganized into three balanced working modules:
+**Detection/Frequency**, **Live Signal/Monitor**, and **Threshold/GR**.
+The waveform no longer has a false central opening; the fader has its own
+dedicated right-hand rail. Larger, grouped left controls use space that was
+previously taken by a blank analyzer. Theme, artwork, automation IDs,
+Phrase-Aware, DSP and the Windows VST3-only distribution remain unchanged.
+Source tests assert the fader is outside waveform geometry, the monitor stack
+stays within the frame and readouts do not overlap their controls.
