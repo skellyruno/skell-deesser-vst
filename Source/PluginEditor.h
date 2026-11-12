@@ -18,13 +18,15 @@ private:
  void updateButtons();
  void setChoice(const char*,int);
  void setFloat(const char*,float);
+ int getDetectorFilterMode() const;
+ void applyDetectorFilterMode(int);
  SkellyDeEsserAudioProcessor& processor;
  SkellyLookAndFeel look;
  SkullKnob frequency;
  ThresholdFader threshold;
  ReadoutBox frequencyValue,thresholdValue;
  TwoStateButton split{"Split"},wide{"Wide"},phraseButton{"Phrase"},audio{"Audio"},sidechain{"S Chain"};
- IconButton hpf{"HPF"},filter{"FILTER"};
+ IconButton hpf{"HP"},filter{"FILTER"};
  IconButton prev{"PREV"},next{"NEXT"},save{"SAVE"},settings{"MENU"},preset{"A: My Default Preset"};
  SectionHeader detectHeader{"DETECTION"},frequencyHeader{"FREQUENCY"},sideHeader{"SIDECHAIN"},monitorHeader{"MONITOR"};
  WaveformBackdrop waveform;

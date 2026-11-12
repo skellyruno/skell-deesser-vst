@@ -1,6 +1,7 @@
 #pragma once
 #include "Theme.h"
 #include <cmath>
+#include <functional>
 
 class SectionHeader:public juce::Component {
 public:
@@ -35,7 +36,16 @@ class ReadoutBox:public juce::Label {public:ReadoutBox(){setJustificationType(ju
  setFont(Theme::font(20,true));setMinimumHorizontalScale(0.72f);
  setEditable(true,true,false);
  setMouseCursor(juce::MouseCursor::IBeamCursor);
-}};
+ }
+ void setWheelStep(double step) noexcept {wheelStep=step;}
+ std::function<void(double)> onWheelDelta;
+ void mouseWheelMove(const juce::MouseEvent& event,const juce::MouseWheelDetails& wheel) override {
+  if(!onWheelDelta || wheel.deltaY==0.f) {juce::Label::mouseWheelMove(event,wheel);return;}
+  onWheelDelta((wheel.deltaY>0.f?1.0:-1.0)*wheelStep);
+ }
+private:
+ double wheelStep=1.0;
+};
 class SkullKnob: public juce::Slider {public:SkullKnob(){
  setSliderStyle(RotaryHorizontalVerticalDrag);setTextBoxStyle(NoTextBox,false,0,0);
  setMouseCursor(juce::MouseCursor::PointingHandCursor);

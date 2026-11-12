@@ -30,8 +30,9 @@ SkellyDeEsserAudioProcessor::SkellyDeEsserAudioProcessor():
  apvts(*this,nullptr,"SkellyState",makeParameters()){
  apvts.state.setProperty("presetName","My Default Preset",nullptr);
  apvts.state.setProperty("slot","A",nullptr);
- apvts.state.setProperty("editorWidth",633,nullptr);
- apvts.state.setProperty("editorHeight",422,nullptr);
+ apvts.state.setProperty("editorWidth",594,nullptr);
+ apvts.state.setProperty("editorHeight",396,nullptr);
+ apvts.state.setProperty("compactLayoutV15",true,nullptr);
  apvts.state.setProperty("compactLayoutV7",true,nullptr);
  // Cache APVTS atomic pointers once; never perform parameter-ID lookups on the audio thread.
  params.threshold=apvts.getRawParameterValue("threshold");

@@ -93,15 +93,22 @@ public:
    g.drawRect(r.getX()+5*u,r.getY()+14*u,14*u,9*u,juce::jmax(1.f,1.6f*u));
    return;
   }
-  if(text=="HPF"){
+  if(text=="HP" || text=="BP"){
    // Scale the path to actual button bounds (the compact view is only 55%).
    const float left=b.getWidth()*.20f, right=b.getWidth()*.80f;
    const float low=b.getHeight()*.69f,high=b.getHeight()*.33f;
    juce::Path path;
    path.startNewSubPath(left,low);
-   path.lineTo(left+(right-left)*.25f,low);
-   path.lineTo(left+(right-left)*.65f,high);
-   path.lineTo(right,high);
+   if(text=="HP") {
+    path.lineTo(left+(right-left)*.25f,low);
+    path.lineTo(left+(right-left)*.65f,high);
+    path.lineTo(right,high);
+   } else {
+    path.lineTo(left+(right-left)*.2f,(low+high)*.5f);
+    path.lineTo(left+(right-left)*.48f,high);
+    path.lineTo(left+(right-left)*.76f,(low+high)*.5f);
+    path.lineTo(right,low);
+   }
    g.strokePath(path,juce::PathStrokeType(juce::jmax(1.4f,b.getWidth()*.045f)));
    g.setFont(Theme::font(juce::jlimit(7.f,10.f,b.getHeight()*.23f),true));
    g.drawFittedText("HPF",0,juce::roundToInt(b.getHeight()*.72f),b.getWidth(),
@@ -161,6 +168,14 @@ public:
    g.fillEllipse(cx+r*.12f,cy-r*.31f,r*.27f,r*.30f);
    g.fillRect(cx-r*.08f,cy+r*.10f,r*.16f,r*.18f);
   }
+  // The center skull artwork stays fixed, while the pointer genuinely rotates.
+  const float theta=start+(end-start)*prop;
+  const auto p1=juce::Point<float>(cx+std::cos(theta)*r*.20f,cy+std::sin(theta)*r*.20f);
+  const auto p2=juce::Point<float>(cx+std::cos(theta)*r*.82f,cy+std::sin(theta)*r*.82f);
+  g.setColour(Theme::bright);
+  g.drawLine(juce::Line<float>(p1,p2),juce::jmax(1.8f,w*.025f));
+  g.setColour(Theme::neon);
+  g.fillEllipse(p2.x-2.f,p2.y-2.f,4.f,4.f);
  }
 private:
  juce::Image knobImage,capImage;
