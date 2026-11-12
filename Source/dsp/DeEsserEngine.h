@@ -152,7 +152,15 @@ public:
    lastPhraseEvents=phraseDecision.learnedEvents;
    for(int c=0;c<channels;++c) {
     const double detectorEnv=(1.0-link)*env[c]+link*shared;
-    const double db=20.0*std::log10(std::max(detectorEnv,1.e-8));
+    // Threshold is bounded to [-60, 0] dBFS, with a 6 dB soft knee.
+    // At or below -63 dBFS the standard reduction is mathematically zero.
+    // Phrase-Aware can learn only events above -56 dBFS, so its relative
+    // threshold cannot fall below this point either. Avoid one costly log10
+    // per channel/sample during genuinely quiet audio; preserve exact
+    // gain and the original full-precision calculation above this floor.
+    constexpr double noReductionFloor=0.0007079457843841379; // -63 dBFS
+    const double db=detectorEnv<=noReductionFloor
+                  ? -160.0 : 20.0*std::log10(std::max(detectorEnv,1.e-8));
     maxEnv=std::max(maxEnv,detectorEnv);
     const double reduction=computeReduction(db,currentThreshold,ratio,range);
     // Phrase-Aware uses the previous sibilant events within this phrase as

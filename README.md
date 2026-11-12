@@ -179,3 +179,15 @@ Real SkellCore screenshots revealed that the 1 kHz and 20 kHz captions
 intruded into the numeric Frequency readout when the left panel was shortened.
 The redundant captions are removed; the live value, knob arc and tooltip with
 the 1–20 kHz range remain. No DSP or automation change.
+
+## V15.4 DSP quiet-detector CPU optimization
+
+In both stereo channels, the envelope's per-sample decibel conversion is
+skipped for samples below -63 dBFS. Since Threshold cannot be below -60 dBFS
+and the conventional knee begins 3 dB earlier, attenuation is mathematically
+zero in this region. Phrase-Aware event learning cannot establish a threshold
+below that region, either. A dedicated regression checks the knee against
+the original log-based calculation for every valid Threshold across all
+Ratio/Range extremes, and the regular DSP, sanitizer, realtime-allocation,
+buffer-partition, and Windows pluginval tests continue to gate the change.
+No change to latency, host IDs, stored preset format or UI geometry.
