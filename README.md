@@ -172,3 +172,10 @@ host automation parameter range remains unchanged. The release remains VST3-only
 The two vertically stacked monitor buttons are now above the bottom decorative
 frame at minimum and compact sizes. The geometry CI explicitly checks that the
 last button ends at y<=850 on the 1536x1024 reference canvas.
+
+### V15.3 compact frequency-value correction
+
+Real SkellCore screenshots revealed that the 1 kHz and 20 kHz captions
+intruded into the numeric Frequency readout when the left panel was shortened.
+The redundant captions are removed; the live value, knob arc and tooltip with
+the 1–20 kHz range remain. No DSP or automation change.

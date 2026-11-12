@@ -15,6 +15,7 @@ assert 'getHeight()*.14f' in controls
 assert 'phraseButton.setToggleState(phraseOn' in editor
 assert 'phraseAware' in processor and 'phraseSensitivity' in processor
 assert 'title(g,"THRESHOLD"' in editor
+assert 'title(g,"1 kHz"' not in editor and 'title(g,"20 kHz"' not in editor, "knob end labels overlap readout"
 assert 'g.drawFittedText("SC LEVEL"' in editor
 assert 'if(!std::isfinite(v))return;' in editor
 assert '"SAVE"' in look and 'const float side=juce::jmin(b.getWidth(),b.getHeight())*.60f' in look

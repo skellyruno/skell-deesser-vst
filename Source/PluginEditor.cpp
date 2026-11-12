@@ -122,7 +122,7 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  prev.setTooltip("Switch to the other A/B preset slot.");
  next.setTooltip("Switch to the other A/B preset slot.");
  save.setTooltip("Export the current A/B preset.");
- frequency.setTooltip("Detector centre frequency: drag knob, scroll, or edit Hz below.");
+ frequency.setTooltip("Detector frequency (1–20 kHz): drag knob, scroll, or edit Hz below.");
  threshold.setTooltip("Threshold: drag the skull. Double-click restores -24 dB.");
  frequencyValue.setTooltip("Enter 5860, 5.86k, or 5860 Hz and press Enter.");
  thresholdValue.setTooltip("Enter a value from -60 to 0 dB.");
@@ -418,8 +418,8 @@ void SkellyDeEsserAudioProcessorEditor::paint(juce::Graphics&g){
   Theme::line(g,i%5?812.f:808.f,y,i%5?819.f:827.f,y,i%5?.45f:.90f);
   if(i%5==0)title(g,juce::String(-2*i),{830,(int)y-14,63,27},22);
  }
- title(g,"1 kHz",{76,529,69,24},16);
- title(g,"20 kHz",{225,529,69,24},16);
+ // The 1/20 kHz labels overlapped the readout in the compact layout.
+ // The knob tooltip specifies its range, and the actual value stays visible.
 
  const auto reduction=juce::jmax(0.f,processor.engine.gainReductionDb.load());
  // Separate 24 dB gain-reduction LED meter; the tall central meter is SC level.
