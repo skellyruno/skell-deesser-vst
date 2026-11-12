@@ -65,11 +65,38 @@ int exerciseActualControls(SkellyDeEsserAudioProcessor& processor,
          "Sidechain monitoring button must select detector");
   expect(click(editor,"Audio") && closeTo(parameter(processor,"monitorMode"),0.f),
          "Audio monitoring button must restore processed output");
+  // Use the *actual UI handlers* rather than writing the parameters directly.
+  expect(click(editor,"HP") && closeTo(parameter(processor,"sidechainFilterType"),3.f)
+         && closeTo(parameter(processor,"sidechainHpf"),0.f),
+         "HP to BP button must choose band-pass DSP");
+  expect(click(editor,"BP") && closeTo(parameter(processor,"sidechainFilterType"),2.f)
+         && closeTo(parameter(processor,"sidechainHpf"),1.f),
+         "BP to HP button must choose high-pass DSP");
   int readouts=0;
   for(int i=0;i<editor.getNumChildComponents();++i)
     if(auto* label=dynamic_cast<ReadoutBox*>(editor.getChildComponent(i)))
       if(label->getText().isNotEmpty())++readouts;
   expect(readouts==2,"Frequency and threshold readouts must be visible on first frame");
+  int readoutIndex=0;
+  for(int i=0;i<editor.getNumChildComponents();++i) {
+    if(auto* label=dynamic_cast<ReadoutBox*>(editor.getChildComponent(i))) {
+      if(!label->onWheelDelta) {expect(false,"numeric readout missing mouse wheel handler");continue;}
+      if(readoutIndex==0) {
+        label->onWheelDelta(100.);
+        expect(closeTo(parameter(processor,"frequency"),5960.f),
+               "frequency number mouse wheel must update DSP parameter");
+        label->onWheelDelta(-100.);
+      } else if(readoutIndex==1) {
+        label->onWheelDelta(1.);
+        expect(closeTo(parameter(processor,"threshold"),-23.f),
+               "threshold number mouse wheel must update one whole dB");
+        expect(!label->getText().containsChar('.'),
+               "threshold visual readout must be whole dB");
+        label->onWheelDelta(-1.);
+      }
+      ++readoutIndex;
+    }
+  }
   if(auto* frequency=findControl<SkullKnob>(editor)) {
     frequency->setValue(7300.,juce::sendNotificationSync);
     expect(closeTo(parameter(processor,"frequency"),7300.f),

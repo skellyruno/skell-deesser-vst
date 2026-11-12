@@ -160,3 +160,10 @@ Skelly DeEsser now ships **Windows VST3 only**. The normal CMake project
 creates no Standalone application. The SkellCore screenshot renderer remains
 an optional development executable, not a customer deliverable. GitHub Actions
 uploads only the Windows VST3 package. See [V14_ENGINEERING_NOTES.md](V14_ENGINEERING_NOTES.md).
+
+### V15 renderer interaction regression
+
+The headless executable tests the production onClick handlers for the HP/BP
+filter button, both resulting APVTS values and Frequency/Threshold readout
+mouse-wheel handlers. The threshold is displayed as whole dB while its original
+host automation parameter range remains unchanged. The release remains VST3-only.
