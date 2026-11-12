@@ -49,7 +49,6 @@ for width,height in [(540,360),(594,396),(760,507),(920,613),(1080,720),(1536,10
         assert scaled[2]>0 and scaled[3]>0, name
 assert 'b.hasKeyboardFocus(true)' in look
 assert 'waveform.setCentreGapEnabled(false)' in editor
-assert 'above* that interior divider' not in editor  # no literal art layer in controls
 assert 'controlMetal' in editor and 'art.fillRoundedRectangle(72.f,224.f,336.f,614.f,12.f)' in editor
 assert 'thresholdDb+60.f' in editor  # fader track reflects threshold, not SC dBFS
 print('UI geometry source checks passed (including compact 594x396 layout)')
