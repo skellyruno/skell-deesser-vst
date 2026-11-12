@@ -62,6 +62,20 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
    art.setOpacity(.65f);  // Let readable controls lead; original metal remains visible.
    draw(art,artFrame,6,6,1524,1012);
   }
+  // The source frame contains an interior metal chain around x=305. When
+  // the left control panel was widened it crossed the actual buttons.
+  // Keep outer chain artwork, but place an opaque recessed working surface
+  // *above* that interior divider, behind all live JUCE controls.
+  juce::ColourGradient controlMetal(
+    juce::Colour::fromRGB(10,24,15),240.f,225.f,
+    juce::Colour::fromRGB(3,12,8),240.f,838.f,false);
+  art.setGradientFill(controlMetal);
+  art.fillRoundedRectangle(72.f,224.f,336.f,614.f,12.f);
+  art.setColour(Theme::mid.withAlpha(.72f));
+  art.drawRoundedRectangle(73.f,225.f,334.f,612.f,11.f,1.5f);
+  // Subtle brushed-metal edge, not an overlaid chain running through text.
+  art.setColour(juce::Colours::white.withAlpha(.05f));
+  art.drawHorizontalLine(236,88.f,394.f);
  }
  look.setArt(knobArt,capArt);
  waveform.setCentreGapEnabled(false);
@@ -413,17 +427,20 @@ void SkellyDeEsserAudioProcessorEditor::paint(juce::Graphics&g){
  g.setColour(Theme::mid.withAlpha(.40f));
  g.drawRoundedRectangle(475.f,330.f,596.f,295.f,9.f,1.5f);
 
- // Dynamic sidechain meter, now on the right in a dedicated fader panel.
+ // The rail now shows the threshold setpoint—not the detector's signal level.
+ // The detector's true dBFS and gain reduction remain visible below waveform.
  draw(g,faderArt,1211,346,82,414);
+ const float thresholdDb=juce::jlimit(-60.f,0.f,(float)threshold.getValue());
+ const float fill=juce::jlimit(0.f,1.f,(thresholdDb+60.f)/60.f);
  const float sideDb=juce::jlimit(-60.f,0.f,processor.engine.sidechainLevelDb.load());
- const float fill=juce::jlimit(0.f,1.f,(sideDb+60.f)/60.f);
  constexpr float meterX=1238.f,meterW=27.f,meterTop=361.f,meterBottom=729.f;
  const float meterHeight=(meterBottom-meterTop)*fill;
  g.setColour(Theme::black.withAlpha(.68f));
  g.fillRoundedRectangle(meterX,meterTop,meterW,meterBottom-meterTop,4.f);
  if(meterHeight>.1f) {
-  juce::ColourGradient gradient(juce::Colour::fromRGB(189,255,55),
-    meterX,meterBottom-meterHeight,Theme::neon,meterX,meterBottom,false);
+  juce::ColourGradient gradient(juce::Colour::fromRGB(119,209,52),
+    meterX,meterBottom-meterHeight,Theme::neon.withAlpha(.75f),
+    meterX,meterBottom,false);
   g.setGradientFill(gradient);
   g.fillRoundedRectangle(meterX,meterBottom-meterHeight,meterW,meterHeight,3.f);
  }

@@ -203,3 +203,13 @@ previously taken by a blank analyzer. Theme, artwork, automation IDs,
 Phrase-Aware, DSP and the Windows VST3-only distribution remain unchanged.
 Source tests assert the fader is outside waveform geometry, the monitor stack
 stays within the frame and readouts do not overlap their controls.
+
+## V16.1 actual-render corrections
+
+SkellCore screenshots revealed that the old background image's internal
+vertical chain cut through the resized Detection buttons and Frequency knob.
+The body now composites a clean recessed panel **above** that decorative
+inner divider, while keeping the outer chain/skull intact. The bright
+right-hand threshold rail now follows the actual threshold setpoint; true
+SC dBFS and gain reduction remain in the central live status strip.
+No parameter, preset, DSP or VST3 compatibility changes.
