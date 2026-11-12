@@ -100,12 +100,16 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
   thresholdValue.setText(juce::String((int)std::lround(threshold.getValue()))+" dB",juce::dontSendNotification);
  };
  frequencyValue.onWheelDelta=[this](double delta){
-  setFloat("frequency",(float)(frequency.getValue()+delta));
-  frequencyValue.setText(juce::String((int)std::lround(frequency.getValue()))+" Hz",juce::dontSendNotification);
+  const double next=juce::jlimit(1000.0,20000.0,
+     (double)processor.apvts.getRawParameterValue("frequency")->load()+delta);
+  setFloat("frequency",(float)next);
+  frequencyValue.setText(juce::String((int)std::lround(next))+" Hz",juce::dontSendNotification);
  };
  thresholdValue.onWheelDelta=[this](double delta){
-  setFloat("threshold",(float)std::round(threshold.getValue()+delta));
-  thresholdValue.setText(juce::String((int)std::lround(threshold.getValue()))+" dB",juce::dontSendNotification);
+  const double next=juce::jlimit(-60.0,0.0,
+    std::round((double)processor.apvts.getRawParameterValue("threshold")->load()+delta));
+  setFloat("threshold",(float)next);
+  thresholdValue.setText(juce::String((int)std::lround(next))+" dB",juce::dontSendNotification);
  };
  split.onClick=[this]{setFloat("phraseAware",0.f);setChoice("detectMode",0);};
  wide.onClick=[this]{setFloat("phraseAware",0.f);setChoice("detectMode",1);};

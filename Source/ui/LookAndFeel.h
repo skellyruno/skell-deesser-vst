@@ -60,18 +60,17 @@ public:
   if(text=="PREV" || text=="NEXT" || text=="FILTER"){
    const float cx=b.getWidth()*.5f,cy=b.getHeight()*.5f;
    juce::Path arrow;const bool left=text=="PREV";
-   if(left){arrow.startNewSubPath(cx+7,cy-10);arrow.lineTo(cx-7,cy);arrow.lineTo(cx+7,cy+10);}
-   else {arrow.startNewSubPath(cx-7,cy-10);arrow.lineTo(cx+7,cy);arrow.lineTo(cx-7,cy+10);}
+   const float dx=juce::jmax(2.5f,b.getWidth()*.17f);
+   const float dy=juce::jmax(3.f,b.getHeight()*.22f);
+   if(left){arrow.startNewSubPath(cx+dx,cy-dy);arrow.lineTo(cx-dx,cy);arrow.lineTo(cx+dx,cy+dy);}
+   else {arrow.startNewSubPath(cx-dx,cy-dy);arrow.lineTo(cx+dx,cy);arrow.lineTo(cx-dx,cy+dy);}
    if(text=="FILTER"){
     arrow.clear();arrow.addTriangle(cx-juce::jmax(3.f,b.getWidth()*.12f),
       cy-juce::jmax(4.f,b.getHeight()*.12f),
       cx+juce::jmax(3.f,b.getWidth()*.12f),
       cy-juce::jmax(4.f,b.getHeight()*.12f),
       cx,cy+juce::jmax(3.f,b.getHeight()*.10f));
-    g.fillPath(arrow);
-    g.setFont(Theme::font(juce::jlimit(7.f,10.f,b.getHeight()*.23f),true));
-    g.drawFittedText("TYPE",0,juce::roundToInt(b.getHeight()*.70f),b.getWidth(),
-                    juce::roundToInt(b.getHeight()*.25f),juce::Justification::centred,1);
+    g.fillPath(arrow); // no tiny caption below a 20-pixel arrow
    }
    else g.strokePath(arrow,juce::PathStrokeType(3.f,juce::PathStrokeType::curved,juce::PathStrokeType::rounded));
    return;
@@ -110,10 +109,7 @@ public:
     path.lineTo(right,low);
    }
    g.strokePath(path,juce::PathStrokeType(juce::jmax(1.4f,b.getWidth()*.045f)));
-   g.setFont(Theme::font(juce::jlimit(7.f,10.f,b.getHeight()*.23f),true));
-   g.drawFittedText("HPF",0,juce::roundToInt(b.getHeight()*.72f),b.getWidth(),
-                   juce::roundToInt(b.getHeight()*.24f),juce::Justification::centred,1);
-   return;
+   return; // shape itself distinguishes HP from BP, no clipped caption
   }
   const bool preset=text.startsWith("A: ")||text.startsWith("B: ");
   const float fs=juce::jlimit(9.f,22.f,b.getHeight()*(preset?.48f:.51f));

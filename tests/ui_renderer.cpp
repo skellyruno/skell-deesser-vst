@@ -260,6 +260,7 @@ int main(int argc,char** argv) {
       {"compact_split","compact_wide"},
       {"compact_split","compact_sidechain"},
       {"compact_split","compact_bandpass"},
+      {"compact_split","compact_frequency_high"},
       {"compact_split","compact_threshold_low"},
       {"compact_threshold_low","compact_threshold_high"}
     };
