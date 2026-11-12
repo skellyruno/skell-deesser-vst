@@ -167,3 +167,8 @@ The headless executable tests the production onClick handlers for the HP/BP
 filter button, both resulting APVTS values and Frequency/Threshold readout
 mouse-wheel handlers. The threshold is displayed as whole dB while its original
 host automation parameter range remains unchanged. The release remains VST3-only.
+
+### V15 left-panel fit correction
+The two vertically stacked monitor buttons are now above the bottom decorative
+frame at minimum and compact sizes. The geometry CI explicitly checks that the
+last button ends at y<=850 on the 1536x1024 reference canvas.

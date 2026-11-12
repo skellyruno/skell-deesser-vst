@@ -460,10 +460,13 @@ void SkellyDeEsserAudioProcessorEditor::resized(){
  auto place=[sx,sy](juce::Component&c,int x,int y,int w,int h){c.setBounds(juce::roundToInt(x*sx),juce::roundToInt(y*sy),juce::roundToInt(w*sx),juce::roundToInt(h*sy));};
  place(detectHeader,76,211,209,41);
  place(split,91,259,178,32);place(wide,91,294,178,32);place(phraseButton,91,329,178,32);
- place(frequencyHeader,76,372,209,39);place(frequency,104,424,150,130);
- place(frequencyValue,100,558,158,39);place(sideHeader,76,613,209,39);
- place(hpf,89,667,122,50);place(filter,220,667,52,50);
- place(monitorHeader,76,734,209,39);place(audio,89,786,183,48);place(sidechain,89,838,183,48);
+ // Keep both monitor buttons within the inner gothic panel (ends near y=850).
+ // This column is grouped more tightly without shrinking the knob labels.
+ place(frequencyHeader,76,365,209,37);place(frequency,104,406,150,125);
+ place(frequencyValue,100,536,158,37);place(sideHeader,76,583,209,35);
+ place(hpf,89,629,122,48);place(filter,220,629,52,48);
+ place(monitorHeader,76,694,209,35);place(audio,89,738,183,44);
+ place(sidechain,89,788,183,44);
  place(waveform,397,316,1064,418);waveform.toBack();
  place(threshold,710,304,116,464);place(thresholdValue,684,783,168,49);
  // Compact preset header with the right-side metal border unobstructed.

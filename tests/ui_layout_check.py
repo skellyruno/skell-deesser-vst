@@ -28,6 +28,7 @@ for key in ('detectHeader','frequencyHeader','sideHeader','monitorHeader',
     assert key in placements, f'missing component: {key}'
 for name, (x,y,w,h) in placements.items():
     assert x>=0 and y>=0 and w>0 and h>0 and x+w<=1536 and y+h<=1024, name
+assert placements['sidechain'][1] + placements['sidechain'][3] <= 850, "monitor button intrudes on bottom frame"
 for a,b in [('prev','preset'),('preset','next'),('next','save'),('save','settings')]:
     ax,ay,aw,ah=placements[a]; bx,by,bw,bh=placements[b]
     assert ax+aw<=bx, f'{a} overlaps {b}'
