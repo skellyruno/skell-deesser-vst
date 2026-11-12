@@ -229,3 +229,12 @@ No parameter, preset, DSP or VST3 compatibility changes.
   extreme reductions, signal polarities, and automation blend combinations.
 - All plugin identity, preset serialization and automation IDs are untouched;
   Windows VST3 is still the only shipping format.
+
+### V17.1 hardware control scale
+
+The first actual V17 screenshot showed that the rotary frequency control was
+still too small to display the new metal bezel at 594×396. The real JUCE
+component is now enlarged by roughly 37% in reference width and 29% in
+reference height, with vertically aligned number box, sidechain heading,
+HP/BP control and popup arrow. Geometry tests check each separation to prevent
+the earlier decorative-border clipping. Audio/preset/automation logic unchanged.

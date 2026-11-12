@@ -34,6 +34,9 @@ for name, (x,y,w,h) in placements.items():
 assert placements['sidechain'][1] + placements['sidechain'][3] <= 850, "monitor button intrudes on bottom frame"
 assert placements['threshold'][0] > placements['waveform'][0]+placements['waveform'][2], "threshold cannot obstruct waveform"
 assert placements['frequencyValue'][1]>placements['frequency'][1]+placements['frequency'][3], "frequency readout overlaps knob"
+assert placements['frequency'][2]>=190 and placements['frequency'][3]>=160, "hardware knob is too small at compact size"
+assert placements['sideHeader'][1]>=placements['frequencyValue'][1]+placements['frequencyValue'][3], "sidechain heading overlaps frequency value"
+assert placements['hpf'][1]>=placements['sideHeader'][1]+placements['sideHeader'][3], "filter icon overlaps sidechain heading"
 for a,b in [('prev','preset'),('preset','next'),('next','save'),('save','settings')]:
     ax,ay,aw,ah=placements[a]; bx,by,bw,bh=placements[b]
     assert ax+aw<=bx, f'{a} overlaps {b}'

@@ -497,10 +497,12 @@ void SkellyDeEsserAudioProcessorEditor::resized(){
  place(split,117,312,244,48);place(wide,117,368,244,48);
  place(phraseButton,117,424,244,48);
  place(frequencyHeader,95,488,287,42);
- place(frequency,166,537,146,129);
- place(frequencyValue,131,675,216,48);
- place(sideHeader,95,741,287,37);
- place(hpf,130,785,179,43);place(filter,317,785,48,43);
+ // A larger hardware knob that is legible at the 594x396 launch size.
+ // Vertical rhythm is checked against the readout and bottom filter controls.
+ place(frequency,140,534,200,166);
+ place(frequencyValue,131,704,216,42);
+ place(sideHeader,95,751,287,32);
+ place(hpf,130,788,179,43);place(filter,317,788,48,43);
 
  // Centre: complete, unobstructed signal history and compact monitoring.
  place(waveform,482,338,581,280);waveform.toBack();
