@@ -124,7 +124,7 @@ bool contactSheet(const juce::File& directory) {
   const std::array<const char*,12> ids {{
     "minimum_split","minimum_phrase","compact_split",
     "compact_wide","compact_phrase","compact_sidechain",
-    "compact_hpf","compact_preset_b","compact_disabled",
+    "compact_bandpass","compact_preset_b","compact_disabled",
     "medium_phrase","large_split","maximum_split"
   }};
   juce::Image sheet(juce::Image::RGB,cols*cellW,rows*cellH,true);
@@ -162,7 +162,7 @@ bool captureActualPopup(SkellyDeEsserAudioProcessorEditor& editor,
   // editor to the desktop and capture the actual menu window.
   if(!editor.isOnDesktop())editor.addToDesktop(juce::ComponentPeer::windowIsTemporary);
   editor.setVisible(true);
-  editor.setBounds(180,140,633,422);
+  editor.setBounds(180,140,594,396);
   juce::PopupMenu::dismissAllActiveMenus();
   auto& desktop=juce::Desktop::getInstance();
   const int before=desktop.getNumComponents();
@@ -243,22 +243,23 @@ int main(int argc,char** argv) {
     skellcore::ui::headless::Options options;
     options.project="Skelly DeEsser / real JUCE VST3 editor";
     const std::array<std::pair<const char*,int>,5> sizes {{
-      {"minimum",540},{"compact",633},{"medium",806},{"large",979},{"maximum",1536}
+      {"minimum",540},{"compact",594},{"medium",760},{"large",920},{"maximum",1536}
     }};
     for(const auto& size:sizes) {
       const int h=juce::roundToInt(size.second/1.5f);
       options.scenes.push_back({juce::String(size.first)+"_split",size.second,h,0,0,false});
       options.scenes.push_back({juce::String(size.first)+"_phrase",size.second,h,0,2,false});
     }
-    for(const char* state:{"wide","sidechain","hpf","preset_b","disabled",
+    for(const char* state:{"wide","sidechain","bandpass","preset_b","disabled",
                            "threshold_low","threshold_high","frequency_high","keyboard_focus"}) {
-      options.scenes.push_back({juce::String("compact_")+state,633,422,0,0,false});
+      options.scenes.push_back({juce::String("compact_")+state,594,396,0,0,false});
     }
     options.minimumColours=18;
     options.mustDiffer={
       {"compact_split","compact_phrase"},
       {"compact_split","compact_wide"},
       {"compact_split","compact_sidechain"},
+      {"compact_split","compact_bandpass"},
       {"compact_split","compact_threshold_low"},
       {"compact_threshold_low","compact_threshold_high"}
     };
@@ -268,7 +269,7 @@ int main(int argc,char** argv) {
       if(processor.getSlot()==1)click(editor,"PREV");
       click(editor,"Split");
       click(editor,"Audio");
-      if(parameter(processor,"sidechainHpf")>.5f)click(editor,"HPF");
+      if(findButton(editor,"BP"))click(editor,"BP"); // restore High-pass before each frame
       if(auto* b=findButton(editor,"S Chain"))b->setEnabled(true);
       if(auto* knob=findControl<SkullKnob>(editor))
         knob->setValue(5860.,juce::sendNotificationSync);
@@ -277,7 +278,7 @@ int main(int argc,char** argv) {
       if(id.contains("phrase"))click(editor,"Phrase");
       else if(id.contains("wide"))click(editor,"Wide");
       if(id.contains("sidechain"))click(editor,"S Chain");
-      if(id.contains("hpf"))click(editor,"HPF");
+      if(id.contains("bandpass"))click(editor,"HP");
       if(id.contains("preset_b"))click(editor,"NEXT");
       if(id.contains("disabled"))
         if(auto* button=findButton(editor,"S Chain"))button->setEnabled(false);

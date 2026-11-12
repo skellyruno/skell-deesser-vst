@@ -140,6 +140,20 @@ The contact sheet renderer now flushes all JUCE drawing before PNG encoding.
 
 See [UI_POLISH_V13.md](UI_POLISH_V13.md) for the compact knob, value-editing, popup-menu and accessibility polish pass.
 
+## V15 real-JUCE polish pass
+
+- Smaller 594 x 396 default, with existing custom-size restoration preserved.
+- The actual Frequency knob now has a rotating indicator; frequency and
+  threshold numeric labels accept mouse-wheel adjustment.
+- Threshold is displayed in whole dB; host automation parameter ID and
+  0.1 dB stored precision are preserved.
+- Detector UI exposes only **High-pass** and **Band-pass**, while retaining
+  legacy APVTS filter indices for old FL Studio sessions.
+- Audio and Sidechain monitor buttons stack vertically; preset strip margins
+  and the right gothic border are more consistent.
+- Use the pinned SkellCore renderer and *real popup captures* after UI edits.
+- See the Windows VST3 build and the UI-renderer workflow for verification.
+
 ## V14 Windows VST3-only distribution
 
 Skelly DeEsser now ships **Windows VST3 only**. The normal CMake project

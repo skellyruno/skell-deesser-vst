@@ -63,11 +63,11 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  // 24Hz timer tick. Keep editable values in sync on the JUCE message thread.
  frequency.onValueChange=[this]{
   if(!frequencyValue.isBeingEdited())
-   frequencyValue.setText(juce::String((int)frequency.getValue())+" Hz",juce::dontSendNotification);
+   frequencyValue.setText(juce::String((int)std::lround(frequency.getValue()))+" Hz",juce::dontSendNotification);
  };
  threshold.onValueChange=[this]{
   if(!thresholdValue.isBeingEdited())
-   thresholdValue.setText(juce::String(threshold.getValue(),1)+" dB",juce::dontSendNotification);
+   thresholdValue.setText(juce::String((int)std::lround(threshold.getValue()))+" dB",juce::dontSendNotification);
  };
  frequency.onValueChange();
  threshold.onValueChange();
@@ -458,13 +458,13 @@ void SkellyDeEsserAudioProcessorEditor::resized(){
  place(split,91,259,178,32);place(wide,91,294,178,32);place(phraseButton,91,329,178,32);
  place(frequencyHeader,76,372,209,39);place(frequency,104,424,150,130);
  place(frequencyValue,100,558,158,39);place(sideHeader,76,613,209,39);
- place(hpf,89,667,89,50);place(filter,182,667,90,50);
- place(monitorHeader,76,734,209,39);place(audio,76,791,101,54);place(sidechain,183,791,100,54);
+ place(hpf,89,667,122,50);place(filter,220,667,52,50);
+ place(monitorHeader,76,734,209,39);place(audio,89,786,183,48);place(sidechain,89,838,183,48);
  place(waveform,397,316,1064,418);waveform.toBack();
  place(threshold,710,304,116,464);place(thresholdValue,684,783,168,49);
- // No overlap: V6's NEXT control occupied the same rectangle as the preset.
- place(prev,1016,128,46,54);place(preset,1066,128,289,54);
- place(next,1359,128,42,54);place(save,1406,128,46,54);place(settings,1457,128,46,54);
+ // Compact preset header with the right-side metal border unobstructed.
+ place(prev,1026,128,50,54);place(preset,1080,128,276,54);
+ place(next,1360,128,50,54);place(save,1414,128,38,54);place(settings,1456,128,36,54);
  const auto textPx=juce::jmax(10.f,24.f*sy);
  frequencyValue.setFont(Theme::font(textPx,true));
  thresholdValue.setFont(Theme::font(juce::jmax(11.f,28.f*sy),true));
@@ -473,7 +473,7 @@ void SkellyDeEsserAudioProcessorEditor::resized(){
 }
 void SkellyDeEsserAudioProcessorEditor::timerCallback(){
  updateButtons();
- const auto frequencyText=juce::String((int)frequency.getValue())+" Hz";
+ const auto frequencyText=juce::String((int)std::lround(frequency.getValue()))+" Hz";
  const auto thresholdText=juce::String((int)std::lround(threshold.getValue()))+" dB";
  if(!frequencyValue.isBeingEdited() && frequencyValue.getText()!=frequencyText)
   frequencyValue.setText(frequencyText,juce::dontSendNotification);

@@ -7,9 +7,9 @@ editor = (root / 'Source/PluginEditor.cpp').read_text()
 processor = (root / 'Source/PluginProcessor.cpp').read_text()
 controls = (root / 'Source/ui/Controls.h').read_text()
 look = (root / 'Source/ui/LookAndFeel.h').read_text()
-assert 'constexpr int compactWidth=633, compactHeight=422' in editor
-assert '"editorWidth",633' in processor and '"editorHeight",422' in processor
-assert 'compactLayoutV7' in editor and 'compactLayoutV7' in processor
+assert 'constexpr int compactWidth=594, compactHeight=396' in editor
+assert '"editorWidth",594' in processor and '"editorHeight",396' in processor
+assert 'compactLayoutV15' in editor and 'compactLayoutV15' in processor
 assert 'getHeight()*.53f' in controls
 assert 'getHeight()*.14f' in controls
 assert 'phraseButton.setToggleState(phraseOn' in editor
@@ -34,14 +34,14 @@ for a,b in [('prev','preset'),('preset','next'),('next','save'),('save','setting
 for a,b in [('detectHeader','split'),('split','wide'),('wide','phraseButton'),('phraseButton','frequencyHeader'),
             ('frequencyHeader','frequency'),('frequency','frequencyValue'),
             ('frequencyValue','sideHeader'),('sideHeader','hpf'),
-            ('hpf','monitorHeader'),('monitorHeader','audio')]:
+            ('hpf','monitorHeader'),('monitorHeader','audio'),('audio','sidechain')]:
     # hpf sits alongside filter, and headings are stacked below in Y.
     ax,ay,aw,ah=placements[a]; bx,by,bw,bh=placements[b]
     assert ay+ah<=by, f'{a} overlaps {b}'
-for width,height in [(540,360),(633,422),(806,537),(979,653),(1152,768),(1536,1024)]:
+for width,height in [(540,360),(594,396),(760,507),(920,613),(1080,720),(1536,1024)]:
     assert abs(width/height-1.5)<.005
     for name,(x,y,w,h) in placements.items():
         scaled=(round(x*width/1536),round(y*height/1024),round(w*width/1536),round(h*height/1024))
         assert scaled[2]>0 and scaled[3]>0, name
 assert 'b.hasKeyboardFocus(true)' in look
-print('UI geometry source checks passed (including compact 633x422 layout)')
+print('UI geometry source checks passed (including compact 594x396 layout)')
