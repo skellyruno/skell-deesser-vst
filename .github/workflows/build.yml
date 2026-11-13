@@ -9,17 +9,6 @@ jobs:
         run: cmake -S . -B build -A x64
       - name: Build Windows VST3 only
         run: cmake --build build --config Release --target SkellyDeEsser_VST3 --parallel 2
-      - name: Package
-        shell: pwsh
-        run: |
-          $plugin = Get-ChildItem build -Directory -Recurse -Filter 'Skelly DeEsser.vst3' | Select-Object -First 1
-          if (!$plugin) { throw 'VST3 bundle missing' }
-          Compress-Archive -Path $plugin.FullName -DestinationPath SkellyDeEsser-Windows-VST3.zip
-      - uses: actions/upload-artifact@v6
-        with:
-          retention-days: 1
-          name: SkellyDeEsser-Windows-VST3
-          path: SkellyDeEsser-Windows-VST3.zip
       # CI-only validation; no runtime dependencies added to the VST3.
       - name: pluginval VST3 host validation (strictness 5)
         shell: pwsh
@@ -36,6 +25,23 @@ jobs:
           $pluginArg = '"' + $plugin.FullName + '"'
           $result = Start-Process -FilePath $validator.FullName -ArgumentList @('--strictness-level', '5', $pluginArg) -PassThru -Wait -NoNewWindow
           if ($result.ExitCode -ne 0) { throw "pluginval validation failed with $($result.ExitCode)" }
+      - name: Package validated Windows VST3 and SHA-256
+        shell: pwsh
+        run: |
+          $plugin = Get-ChildItem build -Directory -Recurse -Filter 'Skelly DeEsser.vst3' | Select-Object -First 1
+          if (!$plugin) { throw 'VST3 bundle missing after validation' }
+          $archive = 'SkellyDeEsser-Windows-VST3.zip'
+          Compress-Archive -Path $plugin.FullName -DestinationPath $archive -Force
+          $digest = (Get-FileHash -Path $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$digest  $archive" | Set-Content -Path "$archive.sha256" -Encoding ascii
+      - uses: actions/upload-artifact@v6
+        with:
+          retention-days: 14
+          name: SkellyDeEsser-Windows-VST3-validated
+          path: |
+            SkellyDeEsser-Windows-VST3.zip
+            SkellyDeEsser-Windows-VST3.zip.sha256
+          if-no-files-found: error
 
   dsp-regression:
     runs-on: ubuntu-latest
