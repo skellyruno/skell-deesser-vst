@@ -10,7 +10,7 @@
 // Keep these on the draft crash-investigation branch, not in a release build.
 struct DeEsserCtorCheckpoint {
  explicit DeEsserCtorCheckpoint(const char* stage) noexcept {
-  std::fprintf(stderr, "UI QA member init: %s\\n", stage);
+  std::fprintf(stderr, "UI QA member init: %s\n", stage);
   std::fflush(stderr);
  }
 };
