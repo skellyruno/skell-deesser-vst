@@ -35,6 +35,7 @@ private:
  DeEsserCtorCheckpoint afterLook{"look and feel"};
  // Explicit UI-only opt-in; no audio callback or saved APVTS state changes.
  skellcore::world::WorldLink worldLink{"skell.deesser", "Skelly DeEsser"};
+ DeEsserCtorCheckpoint afterWorldLink{"SkellWorld link"};
  SkullKnob frequency;
  ThresholdFader threshold;
  ReadoutBox frequencyValue,thresholdValue;
