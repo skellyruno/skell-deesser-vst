@@ -35,7 +35,7 @@ Status legend: [x] verified by the named test; [ ] not yet verified. **Do not ca
 ## P2 — Distribution & support
 
 - [ ] Final installer/ZIP layout, checksums, plugin version numbers, basic manual, demo audio and changelog.
-- [ ] Build Windows and macOS if shipping on both platforms; test clean-machine installation, AV false positives and signed artifacts as appropriate.
+- [ ] **Windows x64 VST3 is the current distribution target**: verify clean-machine installation, AV false positives, and signing requirements as appropriate. macOS is out of scope for this release; do not imply a macOS build exists.
 - [ ] Decide paid/free/trial entitlement flow and validate failure/offline grace paths only after audio quality and host stability gates pass.
 - [ ] Version/release notes, support contact, bug report templates, regression fixtures, and reproducible release CI.
 
@@ -47,14 +47,14 @@ This section records *branch-specific* evidence. It does not replace the P0 chec
 | --- | --- | --- |
 | Windows VST3 compile | [Release-gate branch build 43403512201](https://github.com/skellyruno/skell-deesser-vst/actions/runs/43403512201) succeeded | **Branch build passed**; artifact must still be inspected |
 | Strictness-5 validation and SHA-256 packaging | [Draft PR #3](https://github.com/skellyruno/skell-deesser-vst/pull/3) changes upload order and checksum packaging; associated Windows job succeeded | **Unmerged**; inspect job steps, ZIP and checksum before treating as release evidence |
-| Headless real-JUCE UI | [Diagnostics branch run 43426971156](https://github.com/skellyruno/skell-deesser-vst/actions/runs/43426971156) failed, despite [Windows compile 43426955755](https://github.com/skellyruno/skell-deesser-vst/actions/runs/43426955755) succeeding | **BLOCKED**; inspect the first failed stage and fix the root cause |
+| Headless real-JUCE UI | [Diagnostics branch run 43426971156](https://github.com/skellyruno/skell-deesser-vst/actions/runs/43426971156) failed; [newer run 43465741496](https://github.com/skellyruno/skell-deesser-vst/actions/runs/43465741496) also compiled successfully but failed at `Render real editor across sizes, modes and states` | **BLOCKED**; obtain latest stage logs, isolate constructor failure, and rerun renderer before release |
 | Invalid host-rate DSP regression | [Draft PR #1](https://github.com/skellyruno/skell-deesser-vst/pull/1) adds tests | **Unmerged**; do not assume they pass on main |
 | FL Studio acceptance | No witnessed Windows host test or saved/reloaded .flp evidence | **UNVERIFIED**; cannot release |
 | UI polish / accessibility | Source includes compact sizing and renderer scenes; no passing current-branch real-editor screenshots verified here | **UNVERIFIED** for visual clipping, controls, menus and state retention |
 
 ### P0 manual acceptance record (fill with evidence, not guesses)
 
-Run this on a clean Windows installation with FL Studio after merging a *green* release branch. Record the date, Windows version, FL Studio version, plugin binary SHA-256, sample rate, buffer size, and video/screenshot or log evidence for each result.
+Run this on a clean Windows installation with FL Studio using the **exact candidate artifact from a green branch** before merge or publication; repeat after any release-affecting change. Do not require merging unverified code to perform host acceptance. Record the date, Windows version, FL Studio version, plugin binary SHA-256, sample rate, buffer size, and video/screenshot or log evidence for each result.
 
 1. **Install and scan:** verify one VST3 in the expected Windows VST3 directory, clean scan, one unique plugin entry, correct plugin name and version. Do not overwrite another plugin's installation.
 2. **Host lifecycle:** open/close the editor 10 times, remove/reinsert plugin, reopen a saved project, switch A/B, import/export a .skelly preset and verify exact recalled values. Verify old projects still load.
