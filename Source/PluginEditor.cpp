@@ -1,5 +1,6 @@
 #include "PluginEditor.h"
 #include <BinaryData.h>
+#include <cstdio>
 namespace {
 juce::Image load(const void*ptr,int n){return juce::ImageFileFormat::loadFrom(ptr,(size_t)n);}
 void draw(juce::Graphics&g,const juce::Image&i,float x,float y,float w,float h){if(i.isValid())g.drawImage(i,(int)x,(int)y,(int)w,(int)h,0,0,i.getWidth(),i.getHeight());}
