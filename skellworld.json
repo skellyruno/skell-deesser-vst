@@ -1,0 +1,11 @@
+{
+  "schema": "skellworld-plugin/1",
+  "product_id": "skell.deesser",
+  "display_name": "Skelly DeEsser",
+  "connection": "explicit-opt-in-loopback",
+  "capabilities": [
+    "presence"
+  ],
+  "source_repository": "skellyruno/skell-deesser-vst",
+  "note": "MENU > SkellWorld > Join. Editor-scoped presence only, off by default. No audio, sibilance data, presets or plugin parameters transmitted."
+}

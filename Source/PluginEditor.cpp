@@ -150,7 +150,7 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  phraseButton.setTooltip("Phrase-Aware: learn a singer's normal sibilance per phrase; reduce outliers.");
  filter.setTooltip("Choose the detector filter type. Current choice is marked in the menu.");
  hpf.setTooltip("Enable or disable the sidechain high-pass filter.");
- settings.setTooltip("Audio controls, phrase sensitivity, window size, and plugin information.");
+ settings.setTooltip("Audio controls, phrase sensitivity, window size, optional SkellWorld presence, and about.");
  preset.setTooltip("Import, export or reset a preset. A/B slots switch with the arrow buttons.");
  prev.setTooltip("Switch to the other A/B preset slot.");
  next.setTooltip("Switch to the other A/B preset slot.");
@@ -323,8 +323,8 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
  // Keep the top-level menu short enough for the 540x360 minimum window.
  // More detailed controls stay grouped in small, keyboard-navigable submenus.
  juce::PopupMenu m;
- juce::PopupMenu processing,phrase,presets,sizes;
- for(auto* menu:{&m,&processing,&phrase,&presets,&sizes})
+ juce::PopupMenu processing,phrase,presets,sizes,world;
+ for(auto* menu:{&m,&processing,&phrase,&presets,&sizes,&world})
   menu->setLookAndFeel(&look);
  struct MenuParam {const char* key;const char* name;const char* units;float step;int base;};
  constexpr MenuParam menuParams[] = {
@@ -358,6 +358,10 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
  presets.addItem(1,"Reset processing to defaults");
  presets.addItem(2,"Copy A to B");
  m.addSubMenu("Preset actions",presets);
+ world.addItem(30,worldLink.requested() ?
+   (worldLink.hubOnline() ? "Leave SkellWorld (connected)" : "Leave SkellWorld (hub offline)") :
+   "Join SkellWorld (presence only)");
+ m.addSubMenu("SkellWorld",world);
  m.addSeparator();
  m.addItem(9,"About Skelly DeEsser");
  const auto safe=juce::Component::SafePointer<SkellyDeEsserAudioProcessorEditor>(this);
@@ -367,6 +371,11 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
   auto& self=*safe;
   if(r==1){self.processor.restoreDefaults();self.updateButtons();self.repaint();return;}
   if(r==2){self.processor.copyAToB();self.updateButtons();return;}
+  if(r==30){
+   if(self.worldLink.requested())self.worldLink.leave();
+   else self.worldLink.join(); // background worker only
+   return;
+  }
   if(r>=201 && r<=204){
    constexpr int widths[]{594,760,920,1080};
    const int width=widths[r-201];

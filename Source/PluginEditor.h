@@ -4,6 +4,7 @@
 #include "PluginProcessor.h"
 #include "ui/Controls.h"
 #include "ui/LookAndFeel.h"
+#include <SkellCore/WorldLink.h>
 class SkellyDeEsserAudioProcessorEditor final:public juce::AudioProcessorEditor,private juce::Timer {
 public:
  explicit SkellyDeEsserAudioProcessorEditor(SkellyDeEsserAudioProcessor&);
@@ -22,6 +23,8 @@ private:
  void applyDetectorFilterMode(int);
  SkellyDeEsserAudioProcessor& processor;
  SkellyLookAndFeel look;
+ // Explicit UI-only opt-in; no audio callback or saved APVTS state changes.
+ skellcore::world::WorldLink worldLink{"skell.deesser", "Skelly DeEsser"};
  SkullKnob frequency;
  ThresholdFader threshold;
  ReadoutBox frequencyValue,thresholdValue;

@@ -11,6 +11,13 @@ juce_add_plugin(SkellyDeEsser COMPANY_NAME "Skelly Audio" BUNDLE_ID "audio.skell
  PLUGIN_MANUFACTURER_CODE SkAu PLUGIN_CODE SkDs FORMATS VST3
  PRODUCT_NAME "Skelly DeEsser" IS_SYNTH FALSE NEEDS_MIDI_INPUT FALSE NEEDS_MIDI_OUTPUT FALSE
  IS_MIDI_EFFECT FALSE COPY_PLUGIN_AFTER_BUILD FALSE)
+# Pinned header-only SkellCore WorldLink. No audio DSP/target changes.
+FetchContent_Declare(SkellWorldPresenceHeaders
+  GIT_REPOSITORY https://github.com/skellyruno/skellcore-vst-template.git
+  GIT_TAG c4ae09c896fa84279d3cc42f19925f97a7e5c124
+  GIT_SHALLOW FALSE
+  SOURCE_SUBDIR _world_presence_headers_only)
+FetchContent_MakeAvailable(SkellWorldPresenceHeaders)
 juce_generate_juce_header(SkellyDeEsser)
 juce_add_binary_data(SkellyArt SOURCES
  Assets/frame.png Assets/skull_emblem.png Assets/stage_bg.png Assets/left_panel_bg.png
@@ -19,6 +26,8 @@ target_sources(SkellyDeEsser PRIVATE
  Source/PluginProcessor.cpp Source/PluginProcessor.h Source/PluginEditor.cpp Source/PluginEditor.h
  Source/ui/Theme.h Source/ui/LookAndFeel.h Source/ui/Controls.h
  Source/dsp/WaveformHistory.h Source/dsp/EnvelopeFollower.h Source/dsp/SidechainFilter.h Source/dsp/ComplementaryBand.h Source/dsp/PhraseAwareDetector.h Source/dsp/DeEsserEngine.h)
+target_include_directories(SkellyDeEsser PRIVATE
+  "${skellworldpresenceheaders_SOURCE_DIR}/SkellCore/include")
 target_compile_features(SkellyDeEsser PRIVATE cxx_std_17)
 target_compile_definitions(SkellyDeEsser PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)
 target_link_libraries(SkellyDeEsser PRIVATE SkellyArt juce::juce_audio_utils juce::juce_audio_processors juce::juce_gui_extra)
