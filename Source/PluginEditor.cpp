@@ -8,6 +8,7 @@ void title(juce::Graphics&g,const juce::String&txt,juce::Rectangle<int>r,int siz
 }
 SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEsserAudioProcessor& p):
  AudioProcessorEditor(&p),processor(p),waveform(p.engine.waveform){
+ std::fprintf(stderr,"UI QA ctor: body entered (members initialized)\n"); std::fflush(stderr);
  artFrame=load(BinaryData::frame_png,BinaryData::frame_pngSize);
  stageArt=load(BinaryData::stage_bg_png,BinaryData::stage_bg_pngSize);
  leftArt=load(BinaryData::left_panel_bg_png,BinaryData::left_panel_bg_pngSize);
@@ -77,6 +78,7 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
   art.setColour(juce::Colours::white.withAlpha(.05f));
   art.drawHorizontalLine(236,88.f,394.f);
  }
+ std::fprintf(stderr,"UI QA ctor: backdrop cached\n"); std::fflush(stderr);
  look.setArt(knobArt,capArt);
  waveform.setCentreGapEnabled(false);
  setLookAndFeel(&look);
@@ -86,12 +88,14 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
   (juce::Component*)&save,(juce::Component*)&settings,(juce::Component*)&preset,
   (juce::Component*)&detectHeader,(juce::Component*)&frequencyHeader,(juce::Component*)&sideHeader,(juce::Component*)&monitorHeader,
   (juce::Component*)&waveform}) addAndMakeVisible(*c);
+ std::fprintf(stderr,"UI QA ctor: controls attached to editor\n"); std::fflush(stderr);
  frequency.setRange(1000,20000,1);frequency.setSkewFactorFromMidPoint(5860);
  threshold.setRange(-60,0,1);
  frequencyValue.setWheelStep(100.0);
  thresholdValue.setWheelStep(1.0);
  frequencyAttach=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(p.apvts,"frequency",frequency);
  thresholdAttach=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(p.apvts,"threshold",threshold);
+ std::fprintf(stderr,"UI QA ctor: parameter attachments created\n"); std::fflush(stderr);
  // Headless first-frame capture exposed empty readout boxes before the first
  // 24Hz timer tick. Keep editable values in sync on the JUCE message thread.
  frequency.onValueChange=[this]{
@@ -200,6 +204,7 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  };
  prev.onClick=next.onClick=[this]{processor.switchSlot(1-processor.getSlot());updateButtons();};
  save.onClick=[this]{savePresetFile();};
+ std::fprintf(stderr,"UI QA ctor: callbacks and tooltips installed\n"); std::fflush(stderr);
  aspect.setFixedAspectRatio(1.5);
  aspect.setSizeLimits(540,360,1536,1024);
  setConstrainer(&aspect);
@@ -221,6 +226,7 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  p.apvts.state.setProperty("compactLayoutV15",true,nullptr);
  setSize(savedWidth,savedHeight);
 
+ std::fprintf(stderr,"UI QA ctor: initial size set\n"); std::fflush(stderr);
  startTimerHz(24); // Lower idle repaint cost without reducing the audio processing rate.
 }
 SkellyDeEsserAudioProcessorEditor::~SkellyDeEsserAudioProcessorEditor(){
