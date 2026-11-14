@@ -51,7 +51,7 @@ jobs:
           $actual = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($expected -cne "$actual  $zip") { throw 'Release ZIP checksum mismatch or invalid sidecar' }
           $entries = @(tar -tf $zip)
-          if ($LASTEXITCODE -ne 0 -or !($entries | Where-Object { $_ -match 'Skelly DeEsser\\.vst3/' })) {
+          if ($LASTEXITCODE -ne 0 -or !($entries | Where-Object { $_ -match 'Skelly DeEsser\.vst3/' })) {
             throw 'Release ZIP is unreadable or missing the VST3 bundle'
           }
 
