@@ -90,6 +90,34 @@ int main(){
   }
   std::printf("stress %.0f Hz: passed 350 hostile blocks + unity tests\n",rate);
  }
+ // A malformed host sample-rate notification must fall back safely. A
+ // reset must also clear the public meters and phrase learning state before
+ // the next audio callback (for example when transport restarts).
+ for(double invalidRate:{0.0,-48000.0,999.0,768001.0,
+                         std::numeric_limits<double>::infinity(),
+                         std::numeric_limits<double>::quiet_NaN()}){
+  DeEsserEngine e;e.prepare(invalidRate);
+  DeEsserEngine::Settings s;
+  s.mode=2;s.threshold=-60.f;s.range=24.f;s.ratio=20.f;
+  juce::AudioBuffer<float> audio(2,257);
+  for(int block=0;block<64;++block){
+   for(int c=0;c<2;++c)for(int i=0;i<257;++i)
+    audio.setSample(c,i,(float)(.7*std::sin((block*257+i)*.17)));
+   e.process(audio,s);
+   for(int c=0;c<2;++c)for(int i=0;i<257;++i)
+    assert(std::isfinite(audio.getSample(c,i)));
+  }
+  e.reset();
+  assert(e.sidechainLevelDb.load()==-60.f);
+  assert(e.gainReductionDb.load()==0.f);
+  assert(e.inputPeak.load()==0.f);
+  assert(e.phraseBaselineDb.load()==-60.f);
+  assert(e.phraseLearnedEvents.load()==0);
+  juce::AudioBuffer<float> silence(1,64);
+  for(int i=0;i<64;++i)silence.setSample(0,i,0.f);
+  e.process(silence,s);
+  for(int i=0;i<64;++i)assert(silence.getSample(0,i)==0.f);
+ }
  const auto ms=std::chrono::duration<double,std::milli>(Clock::now()-start).count();
  std::printf("EXTREME_STRESS_PASS: %lld buffers, %lld samples, %.1f ms (informational; hardware dependent)\n",blocks,totalSamples,ms);
 }
