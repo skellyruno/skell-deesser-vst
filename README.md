@@ -247,3 +247,10 @@ version can never lag a build. The left frequency row moves up six reference
 pixels to give the 594×396 numeric box more breathing room above SIDECHAIN.
 This is UI-only; VST3 identity, automation, presets, CPU/DSP and latency are
 unchanged from the tested V17.1 build.
+
+
+## Optional SkellWorld presence (source integration)
+
+In the existing **MENU → SkellWorld** submenu, choose **Join SkellWorld (presence only)** to show this open editor in the local SkellWorld dashboard. Choose Leave to disconnect. This is disabled by default. No audio processing, latency, plugin identity, parameter automation, saved state or preset behavior changes.
+
+The pinned SkellCore WorldLink background worker sends only product ID, display name and an ephemeral editor instance ID. **No microphone audio, sibilance analysis, gain reduction, files, presets, or parameter values are shared.** The hub is optional; the plugin works without it. Closing the editor releases the link. FL Studio host verification remains separate from VST3 CI and pluginval results.
