@@ -40,6 +40,21 @@ jobs:
           $result = Start-Process -FilePath $validator.FullName -ArgumentList @('--strictness-level', '5', $pluginArg) -PassThru -Wait -NoNewWindow
           if ($result.ExitCode -ne 0) { throw "pluginval validation failed with $($result.ExitCode)" }
 
+      - name: Verify packaged ZIP checksum before artifact upload
+        shell: pwsh
+        run: |
+          $zip = 'SkellyDeEsser-Windows-VST3.zip'
+          $sidecar = "$zip.sha256"
+          if (!(Test-Path -LiteralPath $zip -PathType Leaf)) { throw 'Release ZIP missing' }
+          if (!(Test-Path -LiteralPath $sidecar -PathType Leaf)) { throw 'Release checksum missing' }
+          $expected = (Get-Content -LiteralPath $sidecar -Raw).Trim()
+          $actual = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($expected -cne "$actual  $zip") { throw 'Release ZIP checksum mismatch or invalid sidecar' }
+          $entries = @(tar -tf $zip)
+          if ($LASTEXITCODE -ne 0 -or !($entries | Where-Object { $_ -match 'Skelly DeEsser\\.vst3/' })) {
+            throw 'Release ZIP is unreadable or missing the VST3 bundle'
+          }
+
       # Publish the candidate only after pluginval has succeeded.
       - uses: actions/upload-artifact@v6
         with:
