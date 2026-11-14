@@ -259,7 +259,40 @@ bool popupContactSheet(const juce::File& output) {
 }
 } // namespace
 
+// Four local screenshots by default; --full retains the deep visual audit.
+bool quickContactSheet(const juce::File& output) {
+  constexpr std::array<const char*,4> ids{{
+    "compact_split","compact_phrase","compact_preset_b","compact_frequency_high"}};
+  constexpr int w=580,h=406;
+  juce::Image sheet(juce::Image::RGB,2*w,2*h,true);
+  juce::Graphics g(sheet);
+  g.fillAll(juce::Colour(0xff080f0b));
+  for(size_t i=0;i<ids.size();++i) {
+    const auto png=output.getChildFile(juce::String(ids[i])+".png");
+    const auto frame=juce::ImageFileFormat::loadFrom(png);
+    if(!frame.isValid())return false;
+    const int x=int(i%2)*w,y=int(i/2)*h;
+    g.setColour(juce::Colour(0xffe1eadd));
+    g.setFont(juce::Font(juce::FontOptions(17.f)));
+    g.drawText(juce::String(ids[i]).replaceCharacter('_',' '),
+               x+12,y+5,w-24,25,juce::Justification::centredLeft);
+    g.drawImageWithin(frame,x+8,y+35,w-16,h-43,
+                      juce::RectanglePlacement::centred);
+  }
+  return skellcore::ui::headless::writePng(sheet,
+      output.getChildFile("contact-sheet.png"));
+}
+
 int main(int argc,char** argv) {
+  bool full=false;
+  juce::String outputName="ui-screenshots";
+  for(int i=1;i<argc;++i) {
+    const juce::String arg(argv[i]);
+    if(arg=="--full")full=true;
+    else if(arg=="--output" && i+1<argc)outputName=argv[++i];
+    else if(!arg.startsWith("--"))outputName=arg; // old positional format
+    else {std::fprintf(stderr,"Unknown UI argument: %s\\n",arg.toRawUTF8());return 2;}
+  }
   juce::ScopedJuceInitialiser_GUI gui;
   SkellyDeEsserAudioProcessor processor;
   processor.prepareToPlay(48000.,256);
@@ -272,6 +305,14 @@ int main(int argc,char** argv) {
     const std::array<std::pair<const char*,int>,5> sizes {{
       {"minimum",540},{"compact",594},{"medium",760},{"large",920},{"maximum",1536}
     }};
+    if(!full) {
+      options.scenes = {
+        {"compact_split",594,396,0,0,false},
+        {"compact_phrase",594,396,0,2,false},
+        {"compact_preset_b",594,396,0,0,false},
+        {"compact_frequency_high",594,396,0,0,false}
+      };
+    } else {
     for(const auto& size:sizes) {
       const int h=juce::roundToInt(size.second/1.5f);
       options.scenes.push_back({juce::String(size.first)+"_split",size.second,h,0,0,false});
@@ -281,8 +322,15 @@ int main(int argc,char** argv) {
                            "threshold_low","threshold_high","frequency_high","keyboard_focus"}) {
       options.scenes.push_back({juce::String("compact_")+state,594,396,0,0,false});
     }
+    }
     options.minimumColours=18;
-    options.mustDiffer={
+    options.mustDiffer= !full
+      ? std::vector<std::pair<juce::String,juce::String>>{
+          {"compact_split","compact_phrase"},
+          {"compact_split","compact_preset_b"},
+          {"compact_split","compact_frequency_high"}
+        }
+      : std::vector<std::pair<juce::String,juce::String>>{
       {"compact_split","compact_phrase"},
       {"compact_split","compact_wide"},
       {"compact_split","compact_sidechain"},
@@ -326,7 +374,7 @@ int main(int argc,char** argv) {
       editor.repaint();
     };
     options.inspect=[&] {return layoutProblems(editor);};
-    const juce::String path=argc>1?juce::String::fromUTF8(argv[1]):"ui-screenshots";
+    const juce::String path=outputName;
     const auto output=juce::File::getCurrentWorkingDirectory().getChildFile(path);
     auto report=skellcore::ui::headless::render(editor,output,options);
     for(const auto& issue:report.errors) {
@@ -336,9 +384,10 @@ int main(int argc,char** argv) {
       std::fprintf(stderr,"Expected %zu images, got %d\n",options.scenes.size(),report.captured);
       ++failures;
     }
-    if(!contactSheet(output)) {
+    if(!(full ? contactSheet(output) : quickContactSheet(output))) {
       std::fprintf(stderr,"Could not create contact sheet from actual captures\n");++failures;
     }
+    if(full) {
     for(const auto& menu:std::array<std::pair<const char*,const char*>,3>{{
       {"FILTER","popup-filter"},
       {"A: My Default Preset","popup-preset"},
@@ -352,6 +401,7 @@ int main(int argc,char** argv) {
     if(!popupContactSheet(output)) {
       std::fprintf(stderr,"Could not create actual popup contact sheet\n");
       ++failures;
+    }
     }
     std::printf("Skelly DeEsser: %d actual JUCE scenes, %d failures\n",
                 report.captured,failures);
