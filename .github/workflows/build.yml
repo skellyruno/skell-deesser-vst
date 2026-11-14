@@ -43,8 +43,9 @@ jobs:
       # Publish the candidate only after pluginval has succeeded.
       - uses: actions/upload-artifact@v6
         with:
-          retention-days: 1
+          retention-days: 14
           name: SkellyDeEsser-Windows-VST3
+          if-no-files-found: error
           path: |
             SkellyDeEsser-Windows-VST3.zip
             SkellyDeEsser-Windows-VST3.zip.sha256
