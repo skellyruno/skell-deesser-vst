@@ -15,11 +15,21 @@ jobs:
           $plugin = Get-ChildItem build -Directory -Recurse -Filter 'Skelly DeEsser.vst3' | Select-Object -First 1
           if (!$plugin) { throw 'VST3 bundle missing' }
           Compress-Archive -Path $plugin.FullName -DestinationPath SkellyDeEsser-Windows-VST3.zip
+      - name: Record ZIP SHA-256 for release evidence
+        shell: pwsh
+        run: |
+          $zip = 'SkellyDeEsser-Windows-VST3.zip'
+          if (!(Test-Path -LiteralPath $zip -PathType Leaf)) { throw 'VST3 ZIP missing before checksum' }
+          $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $zip" | Set-Content -LiteralPath 'SkellyDeEsser-Windows-VST3.zip.sha256' -Encoding ascii
+          Write-Host "Release candidate ZIP SHA-256: $hash"
       - uses: actions/upload-artifact@v6
         with:
           retention-days: 1
           name: SkellyDeEsser-Windows-VST3
-          path: SkellyDeEsser-Windows-VST3.zip
+          path: |
+            SkellyDeEsser-Windows-VST3.zip
+            SkellyDeEsser-Windows-VST3.zip.sha256
       # CI-only validation; no runtime dependencies added to the VST3.
       - name: pluginval VST3 host validation (strictness 5)
         shell: pwsh
