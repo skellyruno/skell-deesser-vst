@@ -40,8 +40,16 @@ private:
  ThresholdFader threshold;
  ReadoutBox frequencyValue,thresholdValue;
  DeEsserCtorCheckpoint afterReadouts{"knobs, fader and readouts"};
- TwoStateButton split{"Split"},wide{"Wide"},phraseButton{"Phrase"},audio{"Audio"},sidechain{"S Chain"};
- DeEsserCtorCheckpoint afterToggleButtons{"two-state buttons"};
+ TwoStateButton split{"Split"};
+ DeEsserCtorCheckpoint afterSplit{"split button"};
+ TwoStateButton wide{"Wide"};
+ DeEsserCtorCheckpoint afterWide{"wide button"};
+ TwoStateButton phraseButton{"Phrase"};
+ DeEsserCtorCheckpoint afterPhrase{"phrase button"};
+ TwoStateButton audio{"Audio"};
+ DeEsserCtorCheckpoint afterAudio{"audio button"};
+ TwoStateButton sidechain{"S Chain"};
+ DeEsserCtorCheckpoint afterToggleButtons{"sidechain button"};
  IconButton hpf{"HP"},filter{"FILTER"};
  DeEsserCtorCheckpoint afterFilterButtons{"filter buttons"};
  IconButton prev{"PREV"},next{"NEXT"},save{"SAVE"},settings{"MENU"},preset{"A: My Default Preset"};
