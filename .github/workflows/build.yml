@@ -23,13 +23,6 @@ jobs:
           $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  $zip" | Set-Content -LiteralPath 'SkellyDeEsser-Windows-VST3.zip.sha256' -Encoding ascii
           Write-Host "Release candidate ZIP SHA-256: $hash"
-      - uses: actions/upload-artifact@v6
-        with:
-          retention-days: 1
-          name: SkellyDeEsser-Windows-VST3
-          path: |
-            SkellyDeEsser-Windows-VST3.zip
-            SkellyDeEsser-Windows-VST3.zip.sha256
       # CI-only validation; no runtime dependencies added to the VST3.
       - name: pluginval VST3 host validation (strictness 5)
         shell: pwsh
@@ -46,6 +39,15 @@ jobs:
           $pluginArg = '"' + $plugin.FullName + '"'
           $result = Start-Process -FilePath $validator.FullName -ArgumentList @('--strictness-level', '5', $pluginArg) -PassThru -Wait -NoNewWindow
           if ($result.ExitCode -ne 0) { throw "pluginval validation failed with $($result.ExitCode)" }
+
+      # Publish the candidate only after pluginval has succeeded.
+      - uses: actions/upload-artifact@v6
+        with:
+          retention-days: 1
+          name: SkellyDeEsser-Windows-VST3
+          path: |
+            SkellyDeEsser-Windows-VST3.zip
+            SkellyDeEsser-Windows-VST3.zip.sha256
 
   dsp-regression:
     runs-on: ubuntu-latest
