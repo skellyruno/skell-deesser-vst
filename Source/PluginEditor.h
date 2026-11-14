@@ -41,8 +41,11 @@ private:
  ReadoutBox frequencyValue,thresholdValue;
  DeEsserCtorCheckpoint afterReadouts{"knobs, fader and readouts"};
  TwoStateButton split{"Split"},wide{"Wide"},phraseButton{"Phrase"},audio{"Audio"},sidechain{"S Chain"};
+ DeEsserCtorCheckpoint afterToggleButtons{"two-state buttons"};
  IconButton hpf{"HP"},filter{"FILTER"};
+ DeEsserCtorCheckpoint afterFilterButtons{"filter buttons"};
  IconButton prev{"PREV"},next{"NEXT"},save{"SAVE"},settings{"MENU"},preset{"A: My Default Preset"};
+ DeEsserCtorCheckpoint afterPresetButtons{"preset and menu buttons"};
  SectionHeader detectHeader{"DETECTION"},frequencyHeader{"FREQUENCY"},sideHeader{"SIDECHAIN"},monitorHeader{"MONITOR"};
  DeEsserCtorCheckpoint beforeWaveform{"buttons and headers"};
  WaveformBackdrop waveform;
