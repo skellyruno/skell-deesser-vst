@@ -41,7 +41,17 @@ public:
   std::fflush(stderr);
  }
 };
-class IconButton:public juce::TextButton {public:explicit IconButton(const juce::String&t):juce::TextButton(t){setMouseCursor(juce::MouseCursor::PointingHandCursor);}};
+class IconButton:public juce::TextButton {
+public:
+ explicit IconButton(const juce::String& t):juce::TextButton(t) {
+  // Draft-only crash diagnostics: identify the precise preset/menu button.
+  std::fprintf(stderr,"UI QA IconButton: base constructed (%s)\n",t.toRawUTF8());
+  std::fflush(stderr);
+  setMouseCursor(juce::MouseCursor::PointingHandCursor);
+  std::fprintf(stderr,"UI QA IconButton: cursor configured (%s)\n",t.toRawUTF8());
+  std::fflush(stderr);
+ }
+};
 class ReadoutBox:public juce::Label {public:ReadoutBox(){setJustificationType(juce::Justification::centred);
  setColour(textColourId,Theme::value);setColour(backgroundColourId,Theme::black);
  setColour(outlineColourId,Theme::mid);setColour(textWhenEditingColourId,Theme::value);
