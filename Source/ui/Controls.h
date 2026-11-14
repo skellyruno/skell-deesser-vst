@@ -2,6 +2,7 @@
 #include "Theme.h"
 #include <cmath>
 #include <functional>
+#include <cstdio>
 
 class SectionHeader:public juce::Component {
 public:
@@ -26,7 +27,20 @@ public:
  }
 private:juce::String title;
 };
-class TwoStateButton:public juce::TextButton {public:explicit TwoStateButton(const juce::String&t):juce::TextButton(t){setClickingTogglesState(false);setMouseCursor(juce::MouseCursor::PointingHandCursor);}};
+class TwoStateButton:public juce::TextButton {
+public:
+ explicit TwoStateButton(const juce::String& t):juce::TextButton(t) {
+  // Draft PR diagnostic only: distinguish base-class construction from setup.
+  std::fprintf(stderr,"UI QA TwoStateButton: base constructed (%s)\n",t.toRawUTF8());
+  std::fflush(stderr);
+  setClickingTogglesState(false);
+  std::fprintf(stderr,"UI QA TwoStateButton: toggle configured (%s)\n",t.toRawUTF8());
+  std::fflush(stderr);
+  setMouseCursor(juce::MouseCursor::PointingHandCursor);
+  std::fprintf(stderr,"UI QA TwoStateButton: cursor configured (%s)\n",t.toRawUTF8());
+  std::fflush(stderr);
+ }
+};
 class IconButton:public juce::TextButton {public:explicit IconButton(const juce::String&t):juce::TextButton(t){setMouseCursor(juce::MouseCursor::PointingHandCursor);}};
 class ReadoutBox:public juce::Label {public:ReadoutBox(){setJustificationType(juce::Justification::centred);
  setColour(textColourId,Theme::value);setColour(backgroundColourId,Theme::black);
