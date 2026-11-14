@@ -1,20 +1,6 @@
 name: Skelly DeEsser / Headless JUCE UI regression
+# Routine screenshots now run locally with Quick4; this is a MANUAL deep-audit fallback.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'CMakeLists.txt'
-      - 'Source/**'
-      - 'Assets/**'
-      - 'tests/ui_renderer.cpp'
-      - '.github/workflows/ui-renderer.yml'
-  pull_request:
-    paths:
-      - 'CMakeLists.txt'
-      - 'Source/**'
-      - 'Assets/**'
-      - 'tests/ui_renderer.cpp'
-      - '.github/workflows/ui-renderer.yml'
   workflow_dispatch:
 
 jobs:
@@ -32,7 +18,7 @@ jobs:
         run: |
           $exe = Get-ChildItem build-ui -Recurse -File -Filter SkellyDeEsserUIRenderer.exe | Select-Object -First 1
           if (!$exe) { throw 'SkellyDeEsserUIRenderer.exe was not built' }
-          & $exe.FullName (Join-Path (Get-Location) 'ui-screenshots')
+          & $exe.FullName --output (Join-Path (Get-Location) 'ui-screenshots') --full
           if ($LASTEXITCODE -ne 0) { throw "UI renderer or regression checks failed: $LASTEXITCODE" }
           $pngs = @(Get-ChildItem ui-screenshots -File -Filter '*.png')
           if ($pngs.Count -ne 24) { throw "Expected 19 scenes, 3 actual popup captures and 2 contact sheets, found $($pngs.Count)" }
