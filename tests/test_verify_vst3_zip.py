@@ -67,6 +67,21 @@ class ReleaseZipTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate"):
             audit.verify(self.zip, BUNDLE)
 
+    def test_case_insensitive_collision(self):
+        self.make_zip(extra=[(BINARY.lower(), FAKE_PE)])
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            audit.verify(self.zip, BUNDLE)
+
+    def test_trailing_parent_segment(self):
+        self.make_zip(extra=[(f"{BUNDLE}/Contents/..", b"x")])
+        with self.assertRaisesRegex(ValueError, "unsafe"):
+            audit.verify(self.zip, BUNDLE)
+
+    def test_trailing_dot_windows_path(self):
+        self.make_zip(extra=[(f"{BUNDLE}/Contents/evil.", b"x")])
+        with self.assertRaisesRegex(ValueError, "unsafe"):
+            audit.verify(self.zip, BUNDLE)
+
     def test_bad_bundle_argument(self):
         self.make_zip()
         with self.assertRaisesRegex(ValueError, "bundle"):
