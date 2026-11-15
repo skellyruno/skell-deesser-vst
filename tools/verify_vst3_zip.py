@@ -17,13 +17,13 @@ def verify(path: Path, bundle: str) -> tuple[str, int]:
         if not entries:
             raise ValueError("empty ZIP")
         names = [entry.filename for entry in entries]
-        if len(names) != len(set(names)):
+        if len(names) != len(set(name.casefold() for name in names)):
             raise ValueError("duplicate ZIP paths")
         for entry in entries:
             name = entry.filename
             parts = name.split("/")
             if (name.startswith("/") or "\\" in name or ":" in parts[0]
-                    or any(part in ("", ".", "..") for part in parts[:-1])):
+                    or any(part in ("", ".", "..") for part in parts)\n                    or any(part.endswith((" ", ".")) for part in parts)):
                 raise ValueError(f"unsafe ZIP path: {name}")
             if parts[0] != bundle:
                 raise ValueError(f"unexpected top-level entry: {name}")
