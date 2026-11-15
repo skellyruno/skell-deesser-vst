@@ -286,12 +286,16 @@ void SkellyDeEsserAudioProcessorEditor::savePresetFile(){
    if(file==juce::File{})return;
    if(!file.hasFileExtension(".skelly"))file=file.withFileExtension(".skelly");
    auto& p=safe->processor;
+   // Export must not rename the live preset when the destination is unwritable.
+   const auto previousName=p.apvts.state.getProperty("presetName","My Default Preset");
    p.apvts.state.setProperty("presetName",file.getFileNameWithoutExtension(),nullptr);
    juce::MemoryBlock data;
    p.getStateInformation(data);
-   if(!file.replaceWithData(data.getData(),data.getSize()))
+   if(!file.replaceWithData(data.getData(),data.getSize())) {
+    p.apvts.state.setProperty("presetName",previousName,nullptr);
     juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,"Skelly DeEsser",
                                            "Could not export preset to the selected location.");
+   }
    safe->updateButtons();
   });
 }
