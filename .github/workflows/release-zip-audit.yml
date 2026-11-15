@@ -1,0 +1,48 @@
+name: Release ZIP audit regression
+on:
+  pull_request:
+    paths:
+      - 'tools/verify_vst3_zip.py'
+      - 'tests/test_verify_vst3_zip.py'
+      - '.github/workflows/release-zip-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  zip-audit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate audit regression cases
+        run: python -m unittest discover -s tests -p 'test_verify_vst3_zip.py' -v
+
+  windows-package-audit:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Configure Windows x64
+        run: cmake -S . -B build -A x64
+      - name: Build VST3 release candidate
+        run: cmake --build build --config Release --target SkellyDeEsser_VST3 --parallel 2
+      - name: Package and audit actual VST3 bundle
+        shell: pwsh
+        run: |
+          $plugins = @(Get-ChildItem build -Directory -Recurse -Filter 'Skelly DeEsser.vst3' | Where-Object { Test-Path (Join-Path $_.FullName 'Contents/x86_64-win/Skelly DeEsser.vst3') })
+          if ($plugins.Count -ne 1) { throw "Expected exactly one built Windows VST3 bundle; found $($plugins.Count)" }
+          Compress-Archive -LiteralPath $plugins[0].FullName -DestinationPath candidate.zip
+          python tools/verify_vst3_zip.py candidate.zip --bundle 'Skelly DeEsser.vst3'
+          if ($LASTEXITCODE -ne 0) { throw "Release ZIP static audit failed: $LASTEXITCODE" }
+      - name: Upload audited candidate for private testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: SkellyDeEsser-Windows-VST3-audited-candidate
+          path: candidate.zip
+          retention-days: 7
