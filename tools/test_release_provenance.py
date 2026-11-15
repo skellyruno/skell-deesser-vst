@@ -17,7 +17,7 @@ def pe_fixture():
     data = bytearray(256)
     data[:2] = b"MZ"
     data[0x3c:0x40] = (128).to_bytes(4, "little")
-    data[128:132] = b"PE\\x00\\x00"
+    data[128:132] = bytes((80, 69, 0, 0))
     return bytes(data)
 
 
