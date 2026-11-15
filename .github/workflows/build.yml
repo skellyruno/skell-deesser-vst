@@ -12,15 +12,15 @@ jobs:
       - name: Validate and normalize VST3 metadata
         shell: pwsh
         run: |
-          python tools/repair_vst3_moduleinfo.py --selftest
+          python scripts/repair_vst3_moduleinfo.py --selftest
           if ($LASTEXITCODE -ne 0) { throw 'Metadata regression tests failed' }
           $plugins = @(Get-ChildItem build -Directory -Recurse -Filter 'Skelly DeEsser.vst3')
           if ($plugins.Count -ne 1) { throw "Expected one VST3 bundle; found $($plugins.Count)" }
           $metadata = Join-Path $plugins[0].FullName 'Contents/Resources/moduleinfo.json'
           if (!(Test-Path -LiteralPath $metadata)) { throw 'moduleinfo.json missing' }
-          python tools/repair_vst3_moduleinfo.py $metadata --fix
+          python scripts/repair_vst3_moduleinfo.py $metadata --fix
           if ($LASTEXITCODE -ne 0) { throw 'VST3 metadata repair failed' }
-          python tools/repair_vst3_moduleinfo.py $metadata
+          python scripts/repair_vst3_moduleinfo.py $metadata
           if ($LASTEXITCODE -ne 0) { throw 'VST3 metadata strict validation failed' }
       - name: Package
         shell: pwsh
@@ -89,7 +89,7 @@ jobs:
             try { $json = $reader.ReadToEnd() } finally { $reader.Dispose() }
             $temp = Join-Path $env:RUNNER_TEMP 'skelly-moduleinfo-from-archive.json'
             [System.IO.File]::WriteAllText($temp, $json)
-            python tools/repair_vst3_moduleinfo.py $temp
+            python scripts/repair_vst3_moduleinfo.py $temp
             if ($LASTEXITCODE -ne 0) { throw 'Archived VST3 metadata is invalid' }
           } finally { $zip.Dispose() }
       - uses: actions/upload-artifact@v6
