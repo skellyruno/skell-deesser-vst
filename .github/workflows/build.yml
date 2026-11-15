@@ -1,5 +1,5 @@
 name: Build Skelly DeEsser
-on: [workflow_dispatch, push]
+on: [workflow_dispatch, push, pull_request]
 jobs:
   windows:
     runs-on: windows-latest
@@ -9,15 +9,40 @@ jobs:
         run: cmake -S . -B build -A x64
       - name: Build Windows VST3 only
         run: cmake --build build --config Release --target SkellyDeEsser_VST3 --parallel 2
+      - name: Validate and normalize VST3 metadata
+        shell: pwsh
+        run: |
+          python scripts/repair_vst3_moduleinfo.py --selftest
+          if ($LASTEXITCODE -ne 0) { throw 'Metadata regression tests failed' }
+          $plugins = @(Get-ChildItem build -Directory -Recurse -Filter 'Skelly DeEsser.vst3')
+          if ($plugins.Count -ne 1) { throw "Expected one VST3 bundle; found $($plugins.Count)" }
+          $metadata = Join-Path $plugins[0].FullName 'Contents/Resources/moduleinfo.json'
+          if (!(Test-Path -LiteralPath $metadata)) { throw 'moduleinfo.json missing' }
+          python scripts/repair_vst3_moduleinfo.py $metadata --fix
+          if ($LASTEXITCODE -ne 0) { throw 'VST3 metadata repair failed' }
+          python scripts/repair_vst3_moduleinfo.py $metadata
+          if ($LASTEXITCODE -ne 0) { throw 'VST3 metadata strict validation failed' }
       - name: Package
         shell: pwsh
         run: |
-          $plugin = Get-ChildItem build -Directory -Recurse -Filter 'Skelly DeEsser.vst3' | Select-Object -First 1
-          if (!$plugin) { throw 'VST3 bundle missing' }
-          Compress-Archive -Path $plugin.FullName -DestinationPath SkellyDeEsser-Windows-VST3.zip
+          $plugins = @(Get-ChildItem build -Directory -Recurse -Filter 'Skelly DeEsser.vst3')
+          if ($plugins.Count -ne 1) { throw "Expected one VST3 bundle; found $($plugins.Count)" }
+          Compress-Archive -Path $plugins[0].FullName -DestinationPath SkellyDeEsser-Windows-VST3.zip
+          Add-Type -AssemblyName System.IO.Compression
+          $zip = [System.IO.Compression.ZipFile]::OpenRead((Join-Path $PWD 'SkellyDeEsser-Windows-VST3.zip'))
+          try {
+            $entries = @($zip.Entries | Where-Object { $_.FullName.EndsWith('moduleinfo.json') })
+            if ($entries.Count -ne 1) { throw "Expected one archived moduleinfo.json; found $($entries.Count)" }
+            $reader = [System.IO.StreamReader]::new($entries[0].Open())
+            try { $json = $reader.ReadToEnd() } finally { $reader.Dispose() }
+            $temp = Join-Path $env:RUNNER_TEMP 'skelly-moduleinfo-from-archive.json'
+            [System.IO.File]::WriteAllText($temp, $json)
+            python scripts/repair_vst3_moduleinfo.py $temp
+            if ($LASTEXITCODE -ne 0) { throw 'Archived VST3 metadata is invalid' }
+          } finally { $zip.Dispose() }
       - uses: actions/upload-artifact@v6
         with:
-          retention-days: 1
+          retention-days: 7
           name: SkellyDeEsser-Windows-VST3
           path: SkellyDeEsser-Windows-VST3.zip
       # CI-only validation; no runtime dependencies added to the VST3.
