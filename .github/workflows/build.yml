@@ -31,7 +31,15 @@ jobs:
           Add-Type -AssemblyName System.IO.Compression
           $zip = [System.IO.Compression.ZipFile]::OpenRead((Join-Path $PWD 'SkellyDeEsser-Windows-VST3.zip'))
           try {
-            $entries = @($zip.Entries | Where-Object { $_.FullName -match '(^|/)moduleinfo\\.json
+            $entries = @($zip.Entries | Where-Object { $_.FullName.EndsWith('moduleinfo.json') })
+          if ($entries.Count -ne 1) { throw "Expected one archived moduleinfo.json; found $($entries.Count)" }
+          $reader = [System.IO.StreamReader]::new($entries[0].Open())
+          try { $json = $reader.ReadToEnd() } finally { $reader.Dispose() }
+          $temp = Join-Path $env:RUNNER_TEMP 'skelly-moduleinfo-from-archive.json'
+          [System.IO.File]::WriteAllText($temp, $json)
+          python scripts/repair_vst3_moduleinfo.py $temp
+          if ($LASTEXITCODE -ne 0) { throw 'Archived VST3 metadata is invalid' }
+          } finally { $zip.Dispose() }
       - uses: actions/upload-artifact@v6
         with:
           retention-days: 1
