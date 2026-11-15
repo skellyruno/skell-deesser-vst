@@ -23,7 +23,8 @@ def verify(path: Path, bundle: str) -> tuple[str, int]:
             name = entry.filename
             parts = name.split("/")
             if (name.startswith("/") or "\\" in name or ":" in parts[0]
-                    or any(part in ("", ".", "..") for part in parts)\n                    or any(part.endswith((" ", ".")) for part in parts)):
+                    or any(part in ("", ".", "..") for part in parts)
+                    or any(part.endswith((" ", ".")) for part in parts)):
                 raise ValueError(f"unsafe ZIP path: {name}")
             if parts[0] != bundle:
                 raise ValueError(f"unexpected top-level entry: {name}")
