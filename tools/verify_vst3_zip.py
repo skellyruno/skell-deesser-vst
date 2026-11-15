@@ -22,6 +22,12 @@ def verify(path: Path, bundle: str) -> tuple[str, int]:
         for entry in entries:
             name = entry.filename
             parts = name.split("/")
+            # ZIP directory entries conventionally end with one slash.
+            # Strip only that terminal separator before checking components.
+            if entry.is_dir():
+                if not name.endswith("/"):
+                    raise ValueError(f"malformed directory entry: {name}")
+                parts = name[:-1].split("/")
             if (name.startswith("/") or "\\" in name or ":" in parts[0]
                     or any(part in ("", ".", "..") for part in parts)
                     or any(part.endswith((" ", ".")) for part in parts)):
