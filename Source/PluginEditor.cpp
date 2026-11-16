@@ -228,7 +228,9 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  setSize(savedWidth,savedHeight);
 
  std::fprintf(stderr,"UI QA ctor: initial size set\n"); std::fflush(stderr);
+ std::fprintf(stderr,"UI QA ctor: before timer start\\n"); std::fflush(stderr);
  startTimerHz(24); // Lower idle repaint cost without reducing the audio processing rate.
+ std::fprintf(stderr,"UI QA ctor: after timer start\\n"); std::fflush(stderr);
 }
 SkellyDeEsserAudioProcessorEditor::~SkellyDeEsserAudioProcessorEditor(){
  // Popup desktop windows retain a LookAndFeel pointer; dismiss before
@@ -539,6 +541,7 @@ void SkellyDeEsserAudioProcessorEditor::resized(){
  processor.apvts.state.setProperty("editorHeight",getHeight(),nullptr);
 }
 void SkellyDeEsserAudioProcessorEditor::timerCallback(){
+ if(lastWaveSerial==UINT64_MAX){std::fprintf(stderr,"UI QA timer: first callback entered\\n");std::fflush(stderr);}
  updateButtons();
  const auto frequencyText=juce::String((int)std::lround(frequency.getValue()))+" Hz";
  const auto thresholdText=juce::String((int)std::lround(threshold.getValue()))+" dB";
