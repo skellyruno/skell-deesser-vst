@@ -2,7 +2,15 @@
 #include <BinaryData.h>
 #include <cstdio>
 namespace {
-juce::Image load(const void*ptr,int n){return juce::ImageFileFormat::loadFrom(ptr,(size_t)n);}
+juce::Image load(const void*ptr,int n,const char* label){
+ std::fprintf(stderr,"UI QA artwork: decode begin %s ptr=%p bytes=%d\n",label,ptr,n);std::fflush(stderr);
+ auto image=juce::ImageFileFormat::loadFrom(ptr,(size_t)n);
+ std::fprintf(stderr,"UI QA artwork: decode end %s valid=%d size=%dx%d\n",label,image.isValid()?1:0,image.getWidth(),image.getHeight());std::fflush(stderr);
+ return image;
+}
+void artworkCheckpoint(const char* stage){
+ std::fprintf(stderr,"UI QA artwork: %s\n",stage);std::fflush(stderr);
+}
 void draw(juce::Graphics&g,const juce::Image&i,float x,float y,float w,float h){if(i.isValid())g.drawImage(i,(int)x,(int)y,(int)w,(int)h,0,0,i.getWidth(),i.getHeight());}
 void title(juce::Graphics&g,const juce::String&txt,juce::Rectangle<int>r,int size=20){g.setColour(Theme::label);
  g.setFont(Theme::font((float)size,true));g.drawFittedText(txt,r,juce::Justification::centred,1);}
@@ -10,18 +18,23 @@ void title(juce::Graphics&g,const juce::String&txt,juce::Rectangle<int>r,int siz
 SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEsserAudioProcessor& p):
  AudioProcessorEditor(&p),processor(p),waveform(p.engine.waveform){
  std::fprintf(stderr,"UI QA ctor: body entered (members initialized)\n"); std::fflush(stderr);
- artFrame=load(BinaryData::frame_png,BinaryData::frame_pngSize);
- stageArt=load(BinaryData::stage_bg_png,BinaryData::stage_bg_pngSize);
- leftArt=load(BinaryData::left_panel_bg_png,BinaryData::left_panel_bg_pngSize);
- faderArt=load(BinaryData::fader_housing_png,BinaryData::fader_housing_pngSize);
- capArt=load(BinaryData::fader_cap_png,BinaryData::fader_cap_pngSize);
- knobArt=load(BinaryData::knob_skull_png,BinaryData::knob_skull_pngSize);
+ artFrame=load(BinaryData::frame_png,BinaryData::frame_pngSize,"frame");
+ stageArt=load(BinaryData::stage_bg_png,BinaryData::stage_bg_pngSize,"stage");
+ leftArt=load(BinaryData::left_panel_bg_png,BinaryData::left_panel_bg_pngSize,"left panel");
+ faderArt=load(BinaryData::fader_housing_png,BinaryData::fader_housing_pngSize,"fader housing");
+ capArt=load(BinaryData::fader_cap_png,BinaryData::fader_cap_pngSize,"fader cap");
+ knobArt=load(BinaryData::knob_skull_png,BinaryData::knob_skull_pngSize,"knob");
+ artworkCheckpoint("all six embedded images decoded");
  // Assemble the high-resolution static artwork just once. The 30-Hz animation
  // only needs to draw the cached image and the live controls/meters.
+ artworkCheckpoint("allocating cached backdrop");
  staticBackdrop = juce::Image(juce::Image::ARGB, Theme::width, Theme::height, true);
+ std::fprintf(stderr,"UI QA artwork: backdrop allocated valid=%d size=%dx%d\n",staticBackdrop.isValid()?1:0,staticBackdrop.getWidth(),staticBackdrop.getHeight());std::fflush(stderr);
  {
   juce::Graphics art(staticBackdrop);
+  artworkCheckpoint("graphics context created");
   art.fillAll(Theme::black);
+  artworkCheckpoint("base fill complete");
   // Keep the detailed artwork, but move it behind clean, dark control surfaces.
   // The screenshot from V6 was difficult to read because the stage texture,
   // framed sidebar and a second emblem were competing with the real controls.
@@ -30,15 +43,19 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
    art.setOpacity(0.46f);
    draw(art,stageArt,352,213,1137,650);
   }
+  artworkCheckpoint("stage artwork draw complete");
   art.setColour(Theme::black.withAlpha(0.67f));
   art.fillRoundedRectangle(369.f,224.f,1096.f,615.f,12.f);
+  artworkCheckpoint("stage overlay complete");
   {
    juce::Graphics::ScopedSaveState save(art);
    art.setOpacity(0.49f);
    draw(art,leftArt,51,198,254,659);
   }
+  artworkCheckpoint("left panel artwork draw complete");
   art.setColour(Theme::black.withAlpha(0.69f));
   art.fillRoundedRectangle(66.f,211.f,218.f,634.f,7.f);
+  artworkCheckpoint("left panel overlay complete");
   // V16 Studio layout: three recessed hardware modules instead of one
   // oversized empty analyzer. Cached once, so no extra idle-frame work.
   const juce::Rectangle<float> modules[] = {
@@ -56,6 +73,7 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
    art.setColour(juce::Colours::white.withAlpha(.035f));
    art.drawHorizontalLine(juce::roundToInt(rect.getY()+8),rect.getX()+15.f,rect.getRight()-15.f);
   }
+  artworkCheckpoint("three recessed module surfaces complete");
   // Keep subtle original texture in the signal module only.
   // One emblem only. The frame PNG already contains the center skull.
   // An additional large skull was causing double edges and visual clutter.
@@ -64,6 +82,7 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
    art.setOpacity(.65f);  // Let readable controls lead; original metal remains visible.
    draw(art,artFrame,6,6,1524,1012);
   }
+  artworkCheckpoint("frame artwork draw complete");
   // The source frame contains an interior metal chain around x=305. When
   // the left control panel was widened it crossed the actual buttons.
   // Keep outer chain artwork, but place an opaque recessed working surface
@@ -78,7 +97,9 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
   // Subtle brushed-metal edge, not an overlaid chain running through text.
   art.setColour(juce::Colours::white.withAlpha(.05f));
   art.drawHorizontalLine(236,88.f,394.f);
+  artworkCheckpoint("control metal and final line complete");
  }
+ artworkCheckpoint("backdrop draw scope complete");
  std::fprintf(stderr,"UI QA ctor: backdrop cached\n"); std::fflush(stderr);
  look.setArt(knobArt,capArt);
  waveform.setCentreGapEnabled(false);
