@@ -6,7 +6,11 @@
 
 class SectionHeader:public juce::Component {
 public:
- explicit SectionHeader(juce::String text):title(std::move(text)){setBufferedToImage(true);}
+ explicit SectionHeader(juce::String text):title(std::move(text)){
+  std::fprintf(stderr,"UI QA SectionHeader: before buffered cache (%s)\n",title.toRawUTF8());std::fflush(stderr);
+  setBufferedToImage(true);
+  std::fprintf(stderr,"UI QA SectionHeader: after buffered cache (%s)\n",title.toRawUTF8());std::fflush(stderr);
+ }
  void paint(juce::Graphics&g) override{
   if(getWidth()<=0 || getHeight()<=0)return;
   // V6 used a fixed 20 px font and an 11 px star at every window size.
@@ -82,7 +86,11 @@ class ThresholdFader:public juce::Slider {public:ThresholdFader(){setSliderStyle
  setScrollWheelEnabled(true);}};
 class WaveformBackdrop:public juce::Component {
 public:
- explicit WaveformBackdrop(const WaveformHistory& h):history(h){setInterceptsMouseClicks(false,false);}
+ explicit WaveformBackdrop(const WaveformHistory& h):history(h){
+  std::fprintf(stderr,"UI QA WaveformBackdrop: before mouse interception setup\n");std::fflush(stderr);
+  setInterceptsMouseClicks(false,false);
+  std::fprintf(stderr,"UI QA WaveformBackdrop: after mouse interception setup\n");std::fflush(stderr);
+ }
  void setCentreGapEnabled(bool enabled) {centreGap=enabled;repaint();}
  void paint(juce::Graphics& g) override {
   std::array<float, WaveformHistory::length> values{};
