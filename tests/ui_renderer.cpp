@@ -181,6 +181,19 @@ bool contactSheet(const juce::File& directory) {
 
 }
 
+int countReadablePopupTextPixels(const juce::Image& image) {
+  if(!image.isValid() || image.getWidth()<=12 || image.getHeight()<=12)return 0;
+  const auto bounds=image.getBounds().reduced(6);
+  int count=0;
+  for(int y=bounds.getY();y<bounds.getBottom();++y)
+    for(int x=bounds.getX();x<bounds.getRight();++x) {
+      const auto pixel=image.getPixelAt(x,y);
+      if(pixel.getAlpha()>160 && pixel.getRed()>80
+         && pixel.getGreen()>140 && pixel.getBlue()>80)
+        ++count;
+    }
+  return count;
+}
 bool captureActualPopup(SkellyDeEsserAudioProcessorEditor& editor,
                         const char* anchor,const juce::File& output,
                         const juce::String& stem) {
@@ -234,6 +247,12 @@ bool captureActualPopup(SkellyDeEsserAudioProcessorEditor& editor,
     if(auto* mm=juce::MessageManager::getInstance())
       mm->runDispatchLoopUntil(45);
   #endif
+  const int readableTextPixels=countReadablePopupTextPixels(menuImage);
+  if(readableTextPixels<24) {
+    std::fprintf(stderr,"Popup contrast regression for %s: only %d readable text pixels\\n",
+                 stem.toRawUTF8(),readableTextPixels);
+    return false;
+  }
   return saved && menuImage.getWidth()>120 && menuImage.getHeight()>45;
 }
 bool popupContactSheet(const juce::File& output) {
