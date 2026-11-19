@@ -8,7 +8,6 @@
 #include <array>
 #include <cmath>
 #include <cstdio>
-#include <memory>
 #include <vector>
 
 namespace {
@@ -281,21 +280,13 @@ bool popupContactSheet(const juce::File& output) {
 
 int main(int argc,char** argv) {
   juce::ScopedJuceInitialiser_GUI gui;
-  std::fprintf(stderr, "UI QA checkpoint: isolated TextButton-derived controls\n"); std::fflush(stderr);
-  {
-    IconButton iconProbe{"UI QA standalone IconButton"};
-    std::fprintf(stderr, "UI QA checkpoint: standalone IconButton constructed\n"); std::fflush(stderr);
-    TwoStateButton toggleProbe{"UI QA standalone TwoStateButton"};
-    std::fprintf(stderr, "UI QA checkpoint: standalone TwoStateButton constructed\n"); std::fflush(stderr);
-  }
   std::fprintf(stderr, "UI QA checkpoint: constructing processor\n"); std::fflush(stderr);
   SkellyDeEsserAudioProcessor processor;
   processor.prepareToPlay(48000.,256);
   int failures=0;
   {
-    std::fprintf(stderr, "UI QA checkpoint: constructing editor on heap\n"); std::fflush(stderr);
-    auto editorOwner = std::make_unique<SkellyDeEsserAudioProcessorEditor>(processor);
-    auto& editor = *editorOwner;
+    std::fprintf(stderr, "UI QA checkpoint: constructing editor\n"); std::fflush(stderr);
+    SkellyDeEsserAudioProcessorEditor editor(processor);
     std::fprintf(stderr, "UI QA checkpoint: editor constructed\n"); std::fflush(stderr);
     std::fprintf(stderr, "UI QA checkpoint: exercising controls\n"); std::fflush(stderr);
     failures+=exerciseActualControls(processor,editor);
