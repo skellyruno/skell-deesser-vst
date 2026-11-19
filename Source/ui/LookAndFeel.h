@@ -26,6 +26,35 @@ public:
   g.setColour(Theme::mid.withAlpha(.66f));
   g.drawRect(0,0,width,height,1);
  }
+ void drawPopupMenuItem(juce::Graphics& g,const juce::Rectangle<int>& area,
+                        bool isSeparator,bool isActive,bool isHighlighted,
+                        bool isTicked,bool hasSubMenu,const juce::String& text,
+                        const juce::String& shortcutKeyText,const juce::Drawable* icon,
+                        const juce::Colour* textColourToUse) override {
+  // JUCE PopupMenu::Item defaults to transparent black. In the V4 renderer
+  // that value can reach drawPopupMenuItem as a non-null colour pointer,
+  // producing black text on this plugin's black menu surface. Keep valid,
+  // intentionally bright item colours; replace transparent/dark defaults
+  // with the same high-contrast green used by the editor.
+  const juce::Colour fallback = Theme::label;
+  const auto* readableText = textColourToUse;
+  if (readableText == nullptr || readableText->getAlpha() < 0.20f
+      || readableText->getBrightness() < 0.45f)
+    readableText = &fallback;
+  juce::LookAndFeel_V4::drawPopupMenuItem(g,area,isSeparator,isActive,isHighlighted,
+      isTicked,hasSubMenu,text,shortcutKeyText,icon,readableText);
+ }
+ void drawPopupMenuSectionHeader(juce::Graphics& g,const juce::Rectangle<int>& area,
+                                 const juce::String& sectionName) override {
+  g.setColour(Theme::bright);
+  g.setFont(Theme::font(15.f,true));
+  g.drawFittedText(sectionName,area.reduced(8,1),juce::Justification::centredLeft,1,.85f);
+ }
+ void drawPopupMenuSectionHeaderWithOptions(juce::Graphics& g,
+      const juce::Rectangle<int>& area,const juce::String& sectionName,
+      const juce::PopupMenu::Options&) override {
+  drawPopupMenuSectionHeader(g,area,sectionName);
+ }
  void drawButtonBackground(juce::Graphics&g,juce::Button& b,const juce::Colour&,bool hover,bool down) override {
   auto r=b.getLocalBounds().toFloat().reduced(2);
   const bool enabled=b.isEnabled();

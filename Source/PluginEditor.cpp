@@ -1,4 +1,11 @@
 #include "PluginEditor.h"
+
+#if defined(SKELLY_DEESSER_UI_DIAGNOSTICS)
+#include <cstdio>
+#define SKELLY_DEESSER_UI_STAGE(name) do { std::fprintf(stderr, "UI QA editor ctor: %s\\n", name); std::fflush(stderr); } while (false)
+#else
+#define SKELLY_DEESSER_UI_STAGE(name) do {} while (false)
+#endif
 #include <BinaryData.h>
 namespace {
 juce::Image load(const void*ptr,int n){return juce::ImageFileFormat::loadFrom(ptr,(size_t)n);}
@@ -8,15 +15,18 @@ void title(juce::Graphics&g,const juce::String&txt,juce::Rectangle<int>r,int siz
 }
 SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEsserAudioProcessor& p):
  AudioProcessorEditor(&p),processor(p),waveform(p.engine.waveform){
+ SKELLY_DEESSER_UI_STAGE("constructor body entered");
  artFrame=load(BinaryData::frame_png,BinaryData::frame_pngSize);
  stageArt=load(BinaryData::stage_bg_png,BinaryData::stage_bg_pngSize);
  leftArt=load(BinaryData::left_panel_bg_png,BinaryData::left_panel_bg_pngSize);
  faderArt=load(BinaryData::fader_housing_png,BinaryData::fader_housing_pngSize);
  capArt=load(BinaryData::fader_cap_png,BinaryData::fader_cap_pngSize);
+ SKELLY_DEESSER_UI_STAGE("art assets loaded");
  knobArt=load(BinaryData::knob_skull_png,BinaryData::knob_skull_pngSize);
  // Assemble the high-resolution static artwork just once. The 30-Hz animation
  // only needs to draw the cached image and the live controls/meters.
  staticBackdrop = juce::Image(juce::Image::ARGB, Theme::width, Theme::height, true);
+ SKELLY_DEESSER_UI_STAGE("static backdrop allocated");
  {
   juce::Graphics art(staticBackdrop);
   art.fillAll(Theme::black);
@@ -77,21 +87,25 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
   art.setColour(juce::Colours::white.withAlpha(.05f));
   art.drawHorizontalLine(236,88.f,394.f);
  }
+ SKELLY_DEESSER_UI_STAGE("static backdrop painted");
  look.setArt(knobArt,capArt);
  waveform.setCentreGapEnabled(false);
  setLookAndFeel(&look);
+ SKELLY_DEESSER_UI_STAGE("look and feel assigned");
  for(auto* c:{(juce::Component*)&frequency,(juce::Component*)&threshold,(juce::Component*)&frequencyValue,(juce::Component*)&thresholdValue,
   (juce::Component*)&split,(juce::Component*)&wide,(juce::Component*)&phraseButton,(juce::Component*)&audio,(juce::Component*)&sidechain,
   (juce::Component*)&hpf,(juce::Component*)&filter,(juce::Component*)&prev,(juce::Component*)&next,
   (juce::Component*)&save,(juce::Component*)&settings,(juce::Component*)&preset,
   (juce::Component*)&detectHeader,(juce::Component*)&frequencyHeader,(juce::Component*)&sideHeader,(juce::Component*)&monitorHeader,
   (juce::Component*)&waveform}) addAndMakeVisible(*c);
+ SKELLY_DEESSER_UI_STAGE("child components added");
  frequency.setRange(1000,20000,1);frequency.setSkewFactorFromMidPoint(5860);
  threshold.setRange(-60,0,1);
  frequencyValue.setWheelStep(100.0);
  thresholdValue.setWheelStep(1.0);
  frequencyAttach=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(p.apvts,"frequency",frequency);
  thresholdAttach=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(p.apvts,"threshold",threshold);
+ SKELLY_DEESSER_UI_STAGE("parameter attachments created");
  // Headless first-frame capture exposed empty readout boxes before the first
  // 24Hz timer tick. Keep editable values in sync on the JUCE message thread.
  frequency.onValueChange=[this]{
@@ -104,6 +118,7 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  };
  frequency.onValueChange();
  threshold.onValueChange();
+ SKELLY_DEESSER_UI_STAGE("initial readouts synced");
  frequencyValue.onEditorHide=[this]{
   auto t=frequencyValue.getText().trim().toLowerCase().removeCharacters(" ");
   if(t.endsWith("hz"))t=t.dropLastCharacters(2);
@@ -200,6 +215,7 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  };
  prev.onClick=next.onClick=[this]{processor.switchSlot(1-processor.getSlot());updateButtons();};
  save.onClick=[this]{savePresetFile();};
+ SKELLY_DEESSER_UI_STAGE("button handlers installed");
  aspect.setFixedAspectRatio(1.5);
  aspect.setSizeLimits(540,360,1536,1024);
  setConstrainer(&aspect);
@@ -220,8 +236,10 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  p.apvts.state.setProperty("compactLayoutV7",true,nullptr);
  p.apvts.state.setProperty("compactLayoutV15",true,nullptr);
  setSize(savedWidth,savedHeight);
+ SKELLY_DEESSER_UI_STAGE("initial size applied");
 
  startTimerHz(24); // Lower idle repaint cost without reducing the audio processing rate.
+ SKELLY_DEESSER_UI_STAGE("timer started");
 }
 SkellyDeEsserAudioProcessorEditor::~SkellyDeEsserAudioProcessorEditor(){
  // Popup desktop windows retain a LookAndFeel pointer; dismiss before

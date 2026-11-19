@@ -181,6 +181,19 @@ bool contactSheet(const juce::File& directory) {
 
 }
 
+int countReadablePopupTextPixels(const juce::Image& image) {
+  if(!image.isValid() || image.getWidth()<=12 || image.getHeight()<=12)return 0;
+  const auto bounds=image.getBounds().reduced(6);
+  int count=0;
+  for(int y=bounds.getY();y<bounds.getBottom();++y)
+    for(int x=bounds.getX();x<bounds.getRight();++x) {
+      const auto pixel=image.getPixelAt(x,y);
+      if(pixel.getAlpha()>160 && pixel.getRed()>80
+         && pixel.getGreen()>140 && pixel.getBlue()>80)
+        ++count;
+    }
+  return count;
+}
 bool captureActualPopup(SkellyDeEsserAudioProcessorEditor& editor,
                         const char* anchor,const juce::File& output,
                         const juce::String& stem) {
@@ -234,6 +247,12 @@ bool captureActualPopup(SkellyDeEsserAudioProcessorEditor& editor,
     if(auto* mm=juce::MessageManager::getInstance())
       mm->runDispatchLoopUntil(45);
   #endif
+  const int readableTextPixels=countReadablePopupTextPixels(menuImage);
+  if(readableTextPixels<24) {
+    std::fprintf(stderr,"Popup contrast regression for %s: only %d readable text pixels\\n",
+                 stem.toRawUTF8(),readableTextPixels);
+    return false;
+  }
   return saved && menuImage.getWidth()>120 && menuImage.getHeight()>45;
 }
 bool popupContactSheet(const juce::File& output) {
@@ -261,12 +280,17 @@ bool popupContactSheet(const juce::File& output) {
 
 int main(int argc,char** argv) {
   juce::ScopedJuceInitialiser_GUI gui;
+  std::fprintf(stderr, "UI QA checkpoint: constructing processor\n"); std::fflush(stderr);
   SkellyDeEsserAudioProcessor processor;
   processor.prepareToPlay(48000.,256);
   int failures=0;
   {
+    std::fprintf(stderr, "UI QA checkpoint: constructing editor\n"); std::fflush(stderr);
     SkellyDeEsserAudioProcessorEditor editor(processor);
+    std::fprintf(stderr, "UI QA checkpoint: editor constructed\n"); std::fflush(stderr);
+    std::fprintf(stderr, "UI QA checkpoint: exercising controls\n"); std::fflush(stderr);
     failures+=exerciseActualControls(processor,editor);
+    std::fprintf(stderr, "UI QA checkpoint: controls exercised\n"); std::fflush(stderr);
     skellcore::ui::headless::Options options;
     options.project="Skelly DeEsser / real JUCE VST3 editor";
     const std::array<std::pair<const char*,int>,5> sizes {{
@@ -292,6 +316,7 @@ int main(int argc,char** argv) {
       {"compact_threshold_low","compact_threshold_high"}
     };
     options.configure=[&](const skellcore::ui::headless::Scene& scene) {
+      std::fprintf(stderr, "UI QA scene: %s\n",scene.id.toRawUTF8()); std::fflush(stderr);
       editor.setSize(scene.width,scene.height);
       auto id=scene.id;
       if(processor.getSlot()==1)click(editor,"PREV");
@@ -328,7 +353,9 @@ int main(int argc,char** argv) {
     options.inspect=[&] {return layoutProblems(editor);};
     const juce::String path=argc>1?juce::String::fromUTF8(argv[1]):"ui-screenshots";
     const auto output=juce::File::getCurrentWorkingDirectory().getChildFile(path);
+    std::fprintf(stderr, "UI QA checkpoint: rendering scenes\n"); std::fflush(stderr);
     auto report=skellcore::ui::headless::render(editor,output,options);
+    std::fprintf(stderr, "UI QA checkpoint: scenes rendered\n"); std::fflush(stderr);
     for(const auto& issue:report.errors) {
       std::fprintf(stderr,"visual regression: %s\n",issue.toRawUTF8());++failures;
     }
@@ -339,11 +366,13 @@ int main(int argc,char** argv) {
     if(!contactSheet(output)) {
       std::fprintf(stderr,"Could not create contact sheet from actual captures\n");++failures;
     }
+    std::fprintf(stderr, "UI QA checkpoint: capturing popup menus\n"); std::fflush(stderr);
     for(const auto& menu:std::array<std::pair<const char*,const char*>,3>{{
       {"FILTER","popup-filter"},
       {"A: My Default Preset","popup-preset"},
       {"MENU","popup-settings"}
     }}){
+      std::fprintf(stderr, "UI QA popup: %s\n",menu.second); std::fflush(stderr);
       if(!captureActualPopup(editor,menu.first,output,menu.second)){
         std::fprintf(stderr,"Popup capture failed: %s\n",menu.second);
         ++failures;
@@ -356,6 +385,7 @@ int main(int argc,char** argv) {
     std::printf("Skelly DeEsser: %d actual JUCE scenes, %d failures\n",
                 report.captured,failures);
   }
+  std::fprintf(stderr, "UI QA checkpoint: editor destroyed; releasing DSP\n"); std::fflush(stderr);
   processor.releaseResources();
   return failures==0?0:1;
 }
