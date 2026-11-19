@@ -37,6 +37,8 @@ target_link_libraries(SkellyDeEsser PRIVATE SkellyArt juce::juce_audio_utils juc
 # does not link SkellCore or carry renderer code. Pin upstream, never track main.
 option(SKELLY_DEESSER_BUILD_UI_RENDERER "Build real editor SkellCore PNG capture tool" OFF)
 if(SKELLY_DEESSER_BUILD_UI_RENDERER)
+  # Compile editor-construction checkpoints only into the development renderer build.
+  target_compile_definitions(SkellyDeEsser PRIVATE SKELLY_DEESSER_UI_DIAGNOSTICS=1)
   if(DEFINED SKELLCORE_PATH AND EXISTS "${SKELLCORE_PATH}/CMakeLists.txt")
     add_subdirectory("${SKELLCORE_PATH}" SkellCoreLocal)
   else()
