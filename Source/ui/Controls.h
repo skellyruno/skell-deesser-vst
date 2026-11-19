@@ -2,10 +2,15 @@
 #include "Theme.h"
 #include <cmath>
 #include <functional>
+#include <cstdio>
 
 class SectionHeader:public juce::Component {
 public:
- explicit SectionHeader(juce::String text):title(std::move(text)){setBufferedToImage(true);}
+ explicit SectionHeader(juce::String text):title(std::move(text)){
+  std::fprintf(stderr,"UI QA SectionHeader: before buffered cache (%s)\n",title.toRawUTF8());std::fflush(stderr);
+  setBufferedToImage(true);
+  std::fprintf(stderr,"UI QA SectionHeader: after buffered cache (%s)\n",title.toRawUTF8());std::fflush(stderr);
+ }
  void paint(juce::Graphics&g) override{
   if(getWidth()<=0 || getHeight()<=0)return;
   // V6 used a fixed 20 px font and an 11 px star at every window size.
@@ -26,8 +31,31 @@ public:
  }
 private:juce::String title;
 };
-class TwoStateButton:public juce::TextButton {public:explicit TwoStateButton(const juce::String&t):juce::TextButton(t){setClickingTogglesState(false);setMouseCursor(juce::MouseCursor::PointingHandCursor);}};
-class IconButton:public juce::TextButton {public:explicit IconButton(const juce::String&t):juce::TextButton(t){setMouseCursor(juce::MouseCursor::PointingHandCursor);}};
+class TwoStateButton:public juce::TextButton {
+public:
+ explicit TwoStateButton(const juce::String& t):juce::TextButton(t) {
+  // Draft PR diagnostic only: distinguish base-class construction from setup.
+  std::fprintf(stderr,"UI QA TwoStateButton: base constructed (%s)\n",t.toRawUTF8());
+  std::fflush(stderr);
+  setClickingTogglesState(false);
+  std::fprintf(stderr,"UI QA TwoStateButton: toggle configured (%s)\n",t.toRawUTF8());
+  std::fflush(stderr);
+  setMouseCursor(juce::MouseCursor::PointingHandCursor);
+  std::fprintf(stderr,"UI QA TwoStateButton: cursor configured (%s)\n",t.toRawUTF8());
+  std::fflush(stderr);
+ }
+};
+class IconButton:public juce::TextButton {
+public:
+ explicit IconButton(const juce::String& t):juce::TextButton(t) {
+  // Draft-only crash diagnostics: identify the precise preset/menu button.
+  std::fprintf(stderr,"UI QA IconButton: base constructed (%s)\n",t.toRawUTF8());
+  std::fflush(stderr);
+  setMouseCursor(juce::MouseCursor::PointingHandCursor);
+  std::fprintf(stderr,"UI QA IconButton: cursor configured (%s)\n",t.toRawUTF8());
+  std::fflush(stderr);
+ }
+};
 class ReadoutBox:public juce::Label {public:ReadoutBox(){setJustificationType(juce::Justification::centred);
  setColour(textColourId,Theme::value);setColour(backgroundColourId,Theme::black);
  setColour(outlineColourId,Theme::mid);setColour(textWhenEditingColourId,Theme::value);
@@ -58,7 +86,11 @@ class ThresholdFader:public juce::Slider {public:ThresholdFader(){setSliderStyle
  setScrollWheelEnabled(true);}};
 class WaveformBackdrop:public juce::Component {
 public:
- explicit WaveformBackdrop(const WaveformHistory& h):history(h){setInterceptsMouseClicks(false,false);}
+ explicit WaveformBackdrop(const WaveformHistory& h):history(h){
+  std::fprintf(stderr,"UI QA WaveformBackdrop: before mouse interception setup\n");std::fflush(stderr);
+  setInterceptsMouseClicks(false,false);
+  std::fprintf(stderr,"UI QA WaveformBackdrop: after mouse interception setup\n");std::fflush(stderr);
+ }
  void setCentreGapEnabled(bool enabled) {centreGap=enabled;repaint();}
  void paint(juce::Graphics& g) override {
   std::array<float, WaveformHistory::length> values{};
