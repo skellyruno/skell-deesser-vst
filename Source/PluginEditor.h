@@ -1,6 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include <cstdint>
+#include <memory>
 #include "PluginProcessor.h"
 #include "ui/Controls.h"
 #include "ui/LookAndFeel.h"
@@ -24,7 +25,8 @@ private:
  SkellyDeEsserAudioProcessor& processor;
  SkellyLookAndFeel look;
  // Explicit UI-only opt-in; no audio callback or saved APVTS state changes.
- skellcore::world::WorldLink worldLink{"skell.deesser", "Skelly DeEsser"};
+ // Optional SkellWorld integration is constructed only after explicit user opt-in.
+ std::unique_ptr<skellcore::world::WorldLink> worldLink;
  SkullKnob frequency;
  ThresholdFader threshold;
  ReadoutBox frequencyValue,thresholdValue;

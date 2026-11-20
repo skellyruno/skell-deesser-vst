@@ -242,6 +242,9 @@ SkellyDeEsserAudioProcessorEditor::SkellyDeEsserAudioProcessorEditor(SkellyDeEss
  SKELLY_DEESSER_UI_STAGE("timer started");
 }
 SkellyDeEsserAudioProcessorEditor::~SkellyDeEsserAudioProcessorEditor(){
+ // Stop the optional worker before tearing down the editor's popup LookAndFeel.
+ // It is null unless the user explicitly joined SkellWorld from Settings.
+ worldLink.reset();
  // Popup desktop windows retain a LookAndFeel pointer; dismiss before
  // the editor-owned SkellyLookAndFeel is destroyed on host editor close.
  juce::PopupMenu::dismissAllActiveMenus();
@@ -376,8 +379,9 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
  presets.addItem(1,"Reset processing to defaults");
  presets.addItem(2,"Copy A to B");
  m.addSubMenu("Preset actions",presets);
- world.addItem(30,worldLink.requested() ?
-   (worldLink.hubOnline() ? "Leave SkellWorld (connected)" : "Leave SkellWorld (hub offline)") :
+ const bool worldRequested=worldLink && worldLink->requested();
+ world.addItem(30,worldRequested ?
+   (worldLink->hubOnline() ? "Leave SkellWorld (connected)" : "Leave SkellWorld (hub offline)") :
    "Join SkellWorld (presence only)");
  m.addSubMenu("SkellWorld",world);
  m.addSeparator();
@@ -390,8 +394,13 @@ void SkellyDeEsserAudioProcessorEditor::showSettings(){
   if(r==1){self.processor.restoreDefaults();self.updateButtons();self.repaint();return;}
   if(r==2){self.processor.copyAToB();self.updateButtons();return;}
   if(r==30){
-   if(self.worldLink.requested())self.worldLink.leave();
-   else self.worldLink.join(); // background worker only
+   if(self.worldLink && self.worldLink->requested()) self.worldLink->leave();
+   else {
+    if(!self.worldLink)
+     self.worldLink=std::make_unique<skellcore::world::WorldLink>(
+       "skell.deesser","Skelly DeEsser");
+    self.worldLink->join(); // background worker only; never the audio callback
+   }
    return;
   }
   if(r>=201 && r<=204){
